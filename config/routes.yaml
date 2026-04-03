@@ -7,5 +7,12 @@
 # To list all registered routes, run the following command:
 #   bin/console debug:router
 
+home:
+    path: /
+    controller: Symfony\Bundle\FrameworkBundle\Controller\RedirectController
+    defaults:
+        route: app_course_index
+        permanent: true
+
 controllers:
     resource: routing.controllers

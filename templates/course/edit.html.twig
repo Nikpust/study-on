@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Редактирование: {{ course.title }} / StudyOn{% endblock %}
+
+{% block body %}
+    <h1>Редактировать курс</h1>
+
+    <a href="{{ path('app_course_index') }}">Отмена</a>
+    
+    {{ include('course/_form.html.twig', {'button_label': 'Сохранить'}) }}
+    {{ include('course/_delete_form.html.twig') }}
+{% endblock %}
