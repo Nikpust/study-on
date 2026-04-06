@@ -45,13 +45,8 @@ final class CourseController extends AbstractController
     #[Route('/{id}', name: 'app_course_show', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function show(Course $course): Response
     {
-        $lessons = $course->getLessons()->toArray();
-        if ($lessons) {
-            usort($lessons, static fn($a, $b) => $a->getNumber() <=> $b->getNumber());
-        }
         return $this->render('course/show.html.twig', [
             'course' => $course,
-            'lessons' => $lessons,
         ]);
     }
 

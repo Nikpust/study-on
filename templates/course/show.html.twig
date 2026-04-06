@@ -12,13 +12,13 @@
 
     <h2>Уроки:</h2>
     <ol>
-        {% for lesson in lessons %}
+        {% for lesson in course.sortedLessons %}
             <li><a href="{{ path('app_lesson_show', {'id': lesson.id}) }}">{{ lesson.title }}</a></li>
         {% else %}
             <p>Уроки не найдены</p>
         {% endfor %}
     </ol>
-    
+
     <hr>
 
     <a href="{{ path('app_course_edit', {'id': course.id}) }}">Редактировать курс</a>

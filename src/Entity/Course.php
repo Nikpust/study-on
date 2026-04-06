@@ -123,4 +123,11 @@ class Course
 
         return $this;
     }
+
+    public function getSortedLessons(): array
+    {
+        $lessons = $this->lessons->toArray();
+        usort($lessons, static fn($a, $b) => $a->getNumber() <=> $b->getNumber());
+        return $lessons;
+    }
 }
