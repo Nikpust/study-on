@@ -42,7 +42,7 @@ final class CourseController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_course_show', methods: ['GET'])]
+    #[Route('/{id}', name: 'app_course_show', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function show(Course $course): Response
     {
         $lessons = $course->getLessons()->toArray();
@@ -55,7 +55,7 @@ final class CourseController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_course_edit', methods: ['GET', 'POST'])]
+    #[Route('/{id}/edit', name: 'app_course_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function edit(Request $request, Course $course, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(CourseType::class, $course);
@@ -75,7 +75,7 @@ final class CourseController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_course_delete', methods: ['POST'])]
+    #[Route('/{id}', name: 'app_course_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(Request $request, Course $course, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete' . $course->getId(), $request->getPayload()->getString('_token'))) {

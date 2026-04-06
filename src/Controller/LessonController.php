@@ -48,7 +48,7 @@ final class LessonController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_lesson_show', methods: ['GET'])]
+    #[Route('/{id}', name: 'app_lesson_show', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function show(Lesson $lesson): Response
     {
         return $this->render('lesson/show.html.twig', [
@@ -57,7 +57,7 @@ final class LessonController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_lesson_edit', methods: ['GET', 'POST'])]
+    #[Route('/{id}/edit', name: 'app_lesson_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function edit(Request $request, Lesson $lesson, EntityManagerInterface $entityManager): Response
     {
         $form = $this->createForm(LessonType::class, $lesson);
@@ -77,7 +77,7 @@ final class LessonController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_lesson_delete', methods: ['POST'])]
+    #[Route('/{id}', name: 'app_lesson_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(Request $request, Lesson $lesson, EntityManagerInterface $entityManager): Response
     {
         $courseId = $lesson->getCourse()->getId();
