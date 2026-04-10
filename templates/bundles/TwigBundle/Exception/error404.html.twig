@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Страница не найдена / StudyOn{% endblock %}
+
+{% block body %}
+    <div class="d-flex flex-column justify-content-center align-items-center text-center">
+        <div class="mb-4">
+            <div class="display-1 fw-bold text-primary">404</div>
+            <h2 class="mb-3">Страница не найдена</h2>
+            <p class="text-body-secondary mb-0">
+                Запрошенная страница не существует или была перемещена
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{{ path('app_course_index') }}" class="btn btn-primary">
+                На главную
+            </a>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                Назад
+            </a>
+        </div>
+    </div>
+{% endblock %}
