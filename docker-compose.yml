@@ -1,6 +1,8 @@
 volumes:
   postgres: ~
   composer_cache: ~
+  yarn_cache: ~
+  node_modules: ~
   VENDOR: ~
   CACHE: ~
 
@@ -41,3 +43,13 @@ services:
       - COMPOSER_CACHE_DIR=/composer-cache
     links:
       - postgres
+
+  node:
+    image: node:alpine
+    environment:
+      - YARN_CACHE_FOLDER=/yarn
+    working_dir: /app
+    volumes:
+      - .:/app
+      - yarn_cache:/yarn
+      - node_modules:/app/node_modules
