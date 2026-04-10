@@ -48,6 +48,7 @@ services:
     image: node:alpine
     environment:
       - YARN_CACHE_FOLDER=/yarn
+      - WATCHPACK_POLLING=true
     working_dir: /app
     volumes:
       - .:/app
