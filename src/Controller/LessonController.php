@@ -33,6 +33,7 @@ final class LessonController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $lesson->setCourse($course);
             $entityManager->persist($lesson);
             $entityManager->flush();
 
@@ -60,14 +61,16 @@ final class LessonController extends AbstractController
     #[Route('/{id}/edit', name: 'app_lesson_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function edit(Request $request, Lesson $lesson, EntityManagerInterface $entityManager): Response
     {
+        $originalCourse = $lesson->getCourse();
         $form = $this->createForm(LessonType::class, $lesson);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $lesson->setCourse($originalCourse);
             $entityManager->flush();
 
             return $this->redirectToRoute('app_course_show', [
-                'id' => $lesson->getCourse()->getId(),
+                'id' => $originalCourse->getId(),
             ], Response::HTTP_SEE_OTHER);
         }
 
