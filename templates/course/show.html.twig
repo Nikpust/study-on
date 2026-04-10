@@ -3,26 +3,54 @@
 {% block title %}{{ course.title }} / Курсы / StudyOn{% endblock %}
 
 {% block body %}
-    <a href="{{ path('app_course_index') }}">Назад</a>
+    <a href="{{ path('app_course_index') }}" class="text-decoration-none fw-medium text-primary">↶ Назад к курсам</a>
 
-    <h1>{{ course.title }}</h1>
-    {% if course.description %}
-        <p>{{ course.description }}</p>
-    {% endif %}
+    <div class="d-flex flex-column gap-1">
+        <div class="d-flex justify-content-between align-items-center gap-4 mb-2 border-bottom border-primary">
+            <h1 class="text-break">{{ course.title }}</h1>
 
-    <h2>Уроки:</h2>
-    <ol>
-        {% for lesson in course.sortedLessons %}
-            <li><a href="{{ path('app_lesson_show', {'id': lesson.id}) }}">{{ lesson.title }}</a></li>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_course_edit', {'id': course.id}) }}" class="btn btn-primary">
+                    Редактировать курс
+                </a>
+
+                <button type="submit" form="delete-course-form" class="btn btn-danger">
+                    Удалить курс
+                </button>
+            </div>
+        </div>
+
+        {% if course.description %}
+            <p>{{ course.description }}</p>
+        {% endif %}
+    </div>
+
+    <div class="d-flex flex-column gap-1">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Уроки:</h2>
+
+            <a href="{{ path('app_lesson_new', {'course_id': course.id}) }}" class="btn btn-outline-primary">
+                Добавить урок
+            </a>
+        </div>
+
+        {% if course.sortedLessons|length > 0 %}
+            <div class="list-group">
+                {% for lesson in course.sortedLessons %}
+                    <a
+                        href="{{ path('app_lesson_show', {'id': lesson.id}) }}"
+                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                    >
+                        <span>{{ loop.index }}. {{ lesson.title }}</span>
+                    </a>
+                {% endfor %}
+            </div>
         {% else %}
-            <p>Уроки не найдены</p>
-        {% endfor %}
-    </ol>
-
-    <hr>
-
-    <a href="{{ path('app_course_edit', {'id': course.id}) }}">Редактировать курс</a>
-    <a href="{{ path('app_lesson_new', {'course_id': course.id}) }}">Добавить урок</a>
+            <div class="alert alert-secondary">
+                Уроки не найдены
+            </div>
+        {% endif %}
+    </div>
 
     {{ include('course/_delete_form.html.twig') }}
 {% endblock %}

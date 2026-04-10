@@ -3,9 +3,19 @@
 {% block title %}Новый курс / StudyOn{% endblock %}
 
 {% block body %}
-    <h1>Создать новый курс</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1>Создать новый курс</h1>
+
+        <div class="d-flex gap-2">
+            <button type="submit" form="course-form" class="btn btn-success">
+                Создать
+            </button>
+
+            <a href="{{ path('app_course_index') }}" class="btn btn-danger">
+                Отмена
+            </a>
+        </div>
+    </div>
 
     {{ include('course/_form.html.twig') }}
-
-    <a href="{{ path('app_course_index') }}">Отмена</a>
 {% endblock %}

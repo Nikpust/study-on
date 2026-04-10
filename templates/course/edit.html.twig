@@ -3,10 +3,19 @@
 {% block title %}Редактирование: {{ course.title }} / StudyOn{% endblock %}
 
 {% block body %}
-    <h1>Редактировать курс</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1>Редактировать курс</h1>
 
-    <a href="{{ path('app_course_index') }}">Отмена</a>
-    
-    {{ include('course/_form.html.twig', {'button_label': 'Сохранить'}) }}
-    {{ include('course/_delete_form.html.twig') }}
+        <div class="d-flex gap-2">
+            <button type="submit" form="course-form" class="btn btn-success">
+                Сохранить
+            </button>
+
+            <a href="{{ path('app_course_index') }}" class="btn btn-danger">
+                Отмена
+            </a>
+        </div>
+    </div>
+
+    {{ include('course/_form.html.twig') }}
 {% endblock %}

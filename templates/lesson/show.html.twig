@@ -3,18 +3,31 @@
 {% block title %}{{ lesson.title }} / {{ course.title }} / StudyOn{% endblock %}
 
 {% block body %}
-    <h1>{{ lesson.title }}</h1>
-    <p>
-        Курс:
-        <a href="{{ path('app_course_show', {'id': course.id}) }}">
-            {{ course.title }}
-        </a>
-    </p>
-    <p>{{ lesson.content }}</p>
+    <a href="{{ path('app_course_show', {'id': lesson.course.id}) }}" class="text-decoration-none fw-medium text-primary">↶ Назад к курсу</a>
 
-    <hr>
+    <div class="d-flex flex-column gap-2">
+        <div class="d-flex justify-content-between align-items-center gap-4 mb-2 border-bottom border-primary">
+            <h1 class="text-break">{{ lesson.title }}</h1>
 
-    <a href="{{ path('app_lesson_edit', {'id': lesson.id}) }}">Редактировать</a>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_lesson_edit', {'id': lesson.id}) }}" class="btn btn-success">
+                    Редактировать урок
+                </a>
 
+                <button type="submit" form="delete-lesson-form" class="btn btn-danger">
+                    Удалить урок
+                </button>
+            </div>
+        </div>
+
+        <h4>
+            Курс:
+            <a href="{{ path('app_course_show', {'id': course.id}) }}" class="text-decoration-none">
+                <span class="text-primary">{{ course.title }}</span>
+            </a>
+        </h4>
+
+        <p>{{ lesson.content }}</p>
+    </div>
     {{ include('lesson/_delete_form.html.twig') }}
 {% endblock %}

@@ -3,9 +3,24 @@
 {% block title %}Новый урок / {{ course.title }} / StudyOn{% endblock %}
 
 {% block body %}
-    <h1>Добавить новый урок</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1>Добавить новый урок</h1>
+
+        <div class="d-flex gap-2">
+            <button type="submit" form="lesson-form" class="btn btn-success">
+                Добавить
+            </button>
+
+            <a href="{{ path('app_course_show', {'id': course.id}) }}" class="btn btn-danger">
+                Отмена
+            </a>
+        </div>
+    </div>
+
+    <div>
+        <div class="form-label">Курс</div>
+        <div class="form-control bg-body-secondary">{{ lesson.course.title }}</div>
+    </div>
 
     {{ include('lesson/_form.html.twig') }}
-
-    <a href="{{ path('app_course_show', {'id': course.id}) }}">Отмена</a>
 {% endblock %}
