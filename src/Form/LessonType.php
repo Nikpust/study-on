@@ -24,9 +24,11 @@ class LessonType extends AbstractType
         $builder
             ->add('title', TextType::class, [
                 'label' => 'Название',
+                'empty_data' => '',
             ])
             ->add('content', TextareaType::class, [
                 'label' => 'Содержание',
+                'empty_data' => '',
             ])
             ->add('number', IntegerType::class, [
                 'label' => 'Номер',

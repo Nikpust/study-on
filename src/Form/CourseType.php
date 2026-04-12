@@ -16,9 +16,11 @@ class CourseType extends AbstractType
         $builder
             ->add('code', TextType::class, [
                 'label' => 'Код',
+                'empty_data' => '',
             ])
             ->add('title', TextType::class, [
                 'label' => 'Название',
+                'empty_data' => '',
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'Описание',
