@@ -16,7 +16,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class CourseController extends AbstractController
 {
     #[Route(name: 'app_course_index', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
     public function index(CourseRepository $courseRepository): Response
     {
         return $this->render('course/index.html.twig', [
@@ -46,7 +45,6 @@ final class CourseController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_course_show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
     public function show(Course $course): Response
     {
         return $this->render('course/show.html.twig', [
