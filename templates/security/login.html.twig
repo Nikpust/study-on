@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Log in!{% endblock %}
+
+{% block body %}
+<form method="post">
+    {% if error %}
+        <div class="alert alert-danger d-flex align-items-center" role="alert">
+            <div class="w-100">
+                {{ error.messageKey|trans(error.messageData, 'security') }}
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    {% if app.user %}
+        <div class="mb-3">
+            You are logged in as {{ app.user.userIdentifier }}, <a href="{{ logout_path() }}">Logout</a>
+        </div>
+    {% endif %}
+
+    <div class="container mt-5 d-flex flex-column align-items-center">
+        <div class="d-flex flex-column gap-2 col-5">
+            <h1 class="h3 mb-3 font-weight-normal text-center">Добро пожаловать в StudyOn!</h1>
+
+            <label for="inputEmail">Email</label>
+            <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" autocomplete="email" required autofocus>
+
+            <label for="inputPassword">Пароль</label>
+            <input type="password" name="password" id="inputPassword" class="form-control" autocomplete="current-password" required>
+
+            <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
+
+            <div class="checkbox mb-3">
+                <label>
+                    <input type="checkbox" name="_remember_me"> Запомнить меня
+                </label>
+            </div>
+
+            <button class="btn btn-primary w-100" type="submit">
+                Войти
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
