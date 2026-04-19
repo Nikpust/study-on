@@ -32,13 +32,13 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
-                                    <a class="dropdown-item" href="{{ path('app_course_index') }}">Профиль</a>
+                                    <a class="dropdown-item" href="{{ path('app_user_profile') }}">Профиль</a>
                                 </li>
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
                                 <li>
-                                    <a class="dropdown-item text-danger" href="{{ path('app_logout') }}">Выйти</a>
+                                    <a class="dropdown-item text-danger" href="{{ logout_path() }}">Выйти</a>
                                 </li>
                             </ul>
                         </div>
