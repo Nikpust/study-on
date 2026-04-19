@@ -11,11 +11,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/lessons')]
 final class LessonController extends AbstractController
 {
     #[Route('/new', name: 'app_lesson_new', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     public function new(
         Request $request,
         CourseRepository $courseRepository,
@@ -50,6 +52,7 @@ final class LessonController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_lesson_show', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function show(Lesson $lesson): Response
     {
         return $this->render('lesson/show.html.twig', [
@@ -59,6 +62,7 @@ final class LessonController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_lesson_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     public function edit(Request $request, Lesson $lesson, EntityManagerInterface $entityManager): Response
     {
         $originalCourse = $lesson->getCourse();
@@ -81,6 +85,7 @@ final class LessonController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_lesson_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     public function delete(Request $request, Lesson $lesson, EntityManagerInterface $entityManager): Response
     {
         $courseId = $lesson->getCourse()->getId();

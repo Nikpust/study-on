@@ -9,15 +9,17 @@
         <div class="d-flex justify-content-between align-items-center gap-4 mb-2 border-bottom border-primary">
             <h1 class="text-break">{{ course.title }}</h1>
 
-            <div class="d-flex gap-2">
-                <a href="{{ path('app_course_edit', {'id': course.id}) }}" class="btn btn-primary">
-                    Редактировать курс
-                </a>
+            {% if app.user and is_granted('ROLE_SUPER_ADMIN') %}
+                <div class="d-flex gap-2">
+                    <a href="{{ path('app_course_edit', {'id': course.id}) }}" class="btn btn-primary">
+                        Редактировать курс
+                    </a>
 
-                <button type="submit" form="delete-course-form" class="btn btn-danger">
-                    Удалить курс
-                </button>
-            </div>
+                    <button type="submit" form="delete-course-form" class="btn btn-danger">
+                        Удалить курс
+                    </button>
+                </div>
+            {% endif %}
         </div>
 
         {% if course.description %}
@@ -29,9 +31,11 @@
         <div class="d-flex justify-content-between align-items-center">
             <h2>Уроки:</h2>
 
-            <a href="{{ path('app_lesson_new', {'course_id': course.id}) }}" class="btn btn-outline-primary">
-                Добавить урок
-            </a>
+            {% if app.user and is_granted('ROLE_SUPER_ADMIN') %}
+                <a href="{{ path('app_lesson_new', {'course_id': course.id}) }}" class="btn btn-outline-primary">
+                    Добавить урок
+                </a>
+            {% endif %}
         </div>
 
         {% if course.sortedLessons|length > 0 %}
