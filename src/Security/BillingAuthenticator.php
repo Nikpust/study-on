@@ -52,12 +52,27 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
             );
         }
 
-        $userLoader = function () use ($data) {
+        $token = $data['token'] ?? null;
+        if (!$token) {
+            throw new CustomUserMessageAuthenticationException(
+                $data['message'] ?? 'Ошибка авторизации'
+            );
+        }
+
+        $userLoader = function () use ($token) {
+            try {
+                $currentUser = $this->billingClient->getCurrentUser($token);
+            } catch (BillingUnavailableException) {
+                throw new CustomUserMessageAuthenticationException(
+                    'Сервис временно недоступен. Попробуйте авторизоваться позднее.'
+                );
+            }
+
             $user = new User();
 
-            $user->setEmail($data['username'] ?? '');
-            $user->setRoles($data['roles'] ?? []);
-            $user->setApiToken($data['token'] ?? null);
+            $user->setEmail($currentUser['username'] ?? '');
+            $user->setRoles($currentUser['roles'] ?? []);
+            $user->setApiToken($token);
 
             return $user;
         };
