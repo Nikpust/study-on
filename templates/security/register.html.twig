@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Регистрация / StudyOn{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block body %}
+    {% if errors is not empty %}
+        <div class="d-flex flex-column align-items-center w-100">
+            {% for error in errors %}
+                <div class="alert alert-danger d-flex align-items-center w-50" role="alert">
+                        <div class="w-100">
+                            {{ error }}
+                        </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="container mt-5 d-flex flex-column align-items-center">
+        <div class="d-flex flex-column gap-2 col-5">
+            <h1 class="h3 mb-3 font-weight-normal text-center">
+                Создайте аккаунт в
+                <a href="{{ path('app_course_index') }}" class="text-decoration-none">StudyOn!</a>
+            </h1>
+
+            {{ form_start(form, { attr: { id: 'register-form' } }) }}
+            {{ form_widget(form) }}
+            {{ form_end(form) }}
+
+            <button class="btn btn-primary w-100" type="submit" form="register-form">
+                Зарегистрироваться
+            </button>
+        </div>
+    </div>
+{% endblock %}
