@@ -4,6 +4,7 @@ namespace App\Security;
 
 use App\Exception\BillingUnavailableException;
 use App\Service\BillingClient;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,6 +29,7 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly BillingClient $billingClient,
+        private readonly CacheItemPoolInterface $cache
     ) {
     }
 
@@ -35,6 +37,7 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
     {
         $email = $request->getPayload()->getString('email');
         $password = $request->getPayload()->getString('password');
+        $rememberMe = $request->getPayload()->getBoolean('_remember_me');
 
         $request->getSession()->set(SecurityRequestAttributes::LAST_USERNAME, $email);
 
@@ -59,7 +62,7 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
             );
         }
 
-        $userLoader = function () use ($token) {
+        $userLoader = function () use ($token, $rememberMe) {
             try {
                 $currentUser = $this->billingClient->getCurrentUser($token);
             } catch (BillingUnavailableException) {
@@ -68,11 +71,24 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
                 );
             }
 
+            if (($currentUser['_status_code'] ?? 500) !== 200) {
+                throw new CustomUserMessageAuthenticationException(
+                    $currentUser['message'] ?? 'Ошибка авторизации'
+                );
+            }
+
             $user = new User();
 
             $user->setEmail($currentUser['username'] ?? '');
             $user->setRoles($currentUser['roles'] ?? []);
             $user->setApiToken($token);
+
+            if ($rememberMe) {
+                $item = $this->cache->getItem('billing_token_' . hash('sha256', $user->getEmail()));
+                $item->set($token);
+                $item->expiresAfter(3600);
+                $this->cache->save($item);
+            }
 
             return $user;
         };

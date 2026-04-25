@@ -2,6 +2,10 @@
 
 namespace App\Security;
 
+use App\Exception\BillingUnavailableException;
+use App\Service\BillingClient;
+use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -11,6 +15,12 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 
 class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
 {
+    public function __construct(
+        private readonly BillingClient $billingClient,
+        private readonly CacheItemPoolInterface $cache,
+    ) {
+    }
+
     /**
      * Symfony calls this method if you use features like switch_user
      * or remember_me.
@@ -22,18 +32,33 @@ class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
      */
     public function loadUserByIdentifier($identifier): UserInterface
     {
+        $tokenItem = $this->cache->getItem('billing_token_' . hash('sha256', $identifier));
+        if (!$tokenItem->isHit()) {
+            throw new UserNotFoundException('Пользователь не найден.');
+        }
+
+        try {
+            $token = $tokenItem->get();
+            $currentUser = $this->billingClient->getCurrentUser($token);
+        } catch (BillingUnavailableException) {
+            throw new CustomUserMessageAuthenticationException(
+                'Сервис временно недоступен. Попробуйте авторизоваться позднее.'
+            );
+        }
+
+        if (($currentUser['_status_code'] ?? 500) !== 200) {
+            throw new CustomUserMessageAuthenticationException(
+                $currentUser['message'] ?? 'Ошибка авторизации'
+            );
+        }
+
         $user = new User();
-        $user->setEmail($identifier);
+
+        $user->setEmail($currentUser['username'] ?? '');
+        $user->setRoles($currentUser['roles'] ?? []);
+        $user->setApiToken($token);
 
         return $user;
-    }
-
-    /**
-     * @deprecated since Symfony 5.3, loadUserByIdentifier() is used instead
-     */
-    public function loadUserByUsername($username): UserInterface
-    {
-        return $this->loadUserByIdentifier($username);
     }
 
     /**
