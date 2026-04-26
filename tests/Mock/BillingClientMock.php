@@ -79,7 +79,10 @@ final readonly class BillingClientMock extends BillingClient
             ],
             'admin-jwt-token' => [
                 'username' => 'test-admin@mail.ru',
-                'roles' => ['ROLE_SUPER_ADMIN'],
+                'roles' => [
+                    'ROLE_USER',
+                    'ROLE_SUPER_ADMIN'
+                ],
                 'balance' => 0.0,
                 '_status_code' => 200,
             ],
