@@ -1,0 +1,7 @@
+services:
+    App\Tests\Mock\BillingClientMock:
+        public: true
+
+    App\Service\BillingClient:
+        alias: App\Tests\Mock\BillingClientMock
+        public: true
