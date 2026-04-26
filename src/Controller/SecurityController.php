@@ -48,7 +48,7 @@ class SecurityController extends AbstractController
         $form = $this->createForm(RegisterType::class, $dto);
         $form->handleRequest($request);
 
-        $errors = null;
+        $errors = [];
 
         if ($form->isSubmitted() && $form->isValid()) {
             try {
