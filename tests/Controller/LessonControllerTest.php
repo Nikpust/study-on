@@ -5,13 +5,15 @@ namespace App\Tests\Controller;
 use App\Entity\Course;
 use App\Repository\CourseRepository;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class LessonControllerTest extends WebTestCase
 {
-    public function testShowDisplaysExistingLesson(): void
+    public function testShowDisplaysExistingLessonForAuthorizedUser(): void
     {
         $client = static::createClient();
+        $this->login($client);
 
         $coursePage = $this->getCoursePageByCode('web-development-basics');
         $crawler = $client->request('GET', $coursePage);
@@ -25,6 +27,19 @@ class LessonControllerTest extends WebTestCase
         self::assertSame($coursePage, $href);
     }
 
+    public function testShowRedirectsUnauthorizedUserToLogin(): void
+    {
+        $client = static::createClient();
+
+        $coursePage = $this->getCoursePageByCode('web-development-basics');
+        $crawler = $client->request('GET', $coursePage);
+        self::assertResponseIsSuccessful();
+
+        $link = $crawler->filter('.list-group-item')->first()->link();
+        $client->click($link);
+        self::assertResponseRedirects('/login', 302);
+    }
+
     public function testShow404ForMissingLesson(): void
     {
         $client = static::createClient();
@@ -33,43 +48,48 @@ class LessonControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
-    public function testNewPageReturnsOk(): void
+    public function testNewPageReturns403ForBaseUser(): void
     {
         $client = static::createClient();
+        $this->login($client);
 
         $courseId = $this->getCourseIdByCode('web-development-basics');
         $client->request('GET', '/lessons/new', ['course_id' => $courseId]);
-        self::assertResponseStatusCodeSame(200);
+        self::assertResponseStatusCodeSame(403);
     }
 
-    public function testNewPageReturns404ForMissingCourse(): void
+    public function testNewPageReturns404ForMissingCourseForAdmin(): void
     {
         $client = static::createClient();
+        $this->login($client, 'test-admin@mail.ru');
 
         $client->request('GET', '/lessons/new', ['course_id' => 99999]);
         self::assertResponseStatusCodeSame(404);
     }
 
-    public function testEditPageReturnsOk(): void
+    public function testEditPageReturns403ForBaseUser(): void
     {
         $client = static::createClient();
+        $this->login($client);
 
         $lessonId = $this->getFirstLessonId('web-development-basics');
         $client->request('GET', '/lessons/' . $lessonId . '/edit');
-        self::assertResponseStatusCodeSame(200);
+        self::assertResponseStatusCodeSame(403);
     }
 
-    public function testEditPageReturns404ForMissingLesson(): void
+    public function testEditPageReturns404ForMissingLessonForAdmin(): void
     {
         $client = static::createClient();
+        $this->login($client, 'test-admin@mail.ru');
 
         $client->request('GET', '/lessons/99999/edit');
         self::assertResponseStatusCodeSame(404);
     }
 
-    public function testAddLessonWithValidData(): void
+    public function testAddLessonWithValidDataForAdmin(): void
     {
         $client = static::createClient();
+        $this->login($client, 'test-admin@mail.ru');
 
         $coursePage = $this->getCoursePageByCode('web-development-basics');
         $crawler = $client->request('GET', $coursePage);
@@ -95,9 +115,10 @@ class LessonControllerTest extends WebTestCase
     }
 
     #[DataProvider('invalidLessonDataProvider')]
-    public function testAddLessonWithInvalidData(array $formData, string $errorMessage): void
+    public function testAddLessonWithInvalidDataForAdmin(array $formData, string $errorMessage): void
     {
         $client = static::createClient();
+        $this->login($client, 'test-admin@mail.ru');
 
         $coursePage = $this->getCoursePageByCode('web-development-basics');
         $client->request('GET', $coursePage);
@@ -112,9 +133,10 @@ class LessonControllerTest extends WebTestCase
         self::assertSelectorTextSame('.invalid-feedback', $errorMessage);
     }
 
-    public function testEditLessonWithValidData(): void
+    public function testEditLessonWithValidDataForAdmin(): void
     {
         $client = static::createClient();
+        $this->login($client, 'test-admin@mail.ru');
 
         $coursePage = $this->getCoursePageByCode('web-development-basics');
         $crawler = $client->request('GET', $coursePage);
@@ -141,9 +163,10 @@ class LessonControllerTest extends WebTestCase
     }
 
     #[DataProvider('invalidLessonDataProvider')]
-    public function testEditLessonWithInvalidData(array $formData, string $errorMessage): void
+    public function testEditLessonWithInvalidDataForAdmin(array $formData, string $errorMessage): void
     {
         $client = static::createClient();
+        $this->login($client, 'test-admin@mail.ru');
 
         $coursePage = $this->getCoursePageByCode('web-development-basics');
         $crawler = $client->request('GET', $coursePage);
@@ -162,9 +185,10 @@ class LessonControllerTest extends WebTestCase
         self::assertSelectorTextSame('.invalid-feedback', $errorMessage);
     }
 
-    public function testDeleteLesson(): void
+    public function testDeleteLessonForAdmin(): void
     {
         $client = static::createClient();
+        $this->login($client, 'test-admin@mail.ru');
 
         $coursePage = $this->getCoursePageByCode('web-development-basics');
         $crawler = $client->request('GET', $coursePage);
@@ -186,6 +210,61 @@ class LessonControllerTest extends WebTestCase
         $countLessonsAfter = $crawler->filter('.list-group-item')->count();
 
         self::assertSame($countLessonsBefore, $countLessonsAfter + 1);
+    }
+
+    public function testDeleteLessonReturns403ForBaseUser(): void
+    {
+        $client = static::createClient();
+        $this->login($client);
+
+        $coursePage = $this->getCoursePageByCode('web-development-basics');
+        $crawler = $client->request('GET', $coursePage);
+        self::assertResponseIsSuccessful();
+
+        $link = $crawler->filter('.list-group-item')->first()->link();
+        $client->click($link);
+        self::assertResponseStatusCodeSame(200);
+
+        $lessonId = $this->getFirstLessonId('web-development-basics');
+
+        $client->request('POST', '/lessons/' . $lessonId);
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testShowLessonPageExistsActionButtonsForAdmin(): void
+    {
+        $client = static::createClient();
+        $this->login($client, 'test-admin@mail.ru');
+
+        $coursePage = $this->getCoursePageByCode('web-development-basics');
+        $crawler = $client->request('GET', $coursePage);
+        self::assertResponseIsSuccessful();
+
+        $link = $crawler->filter('.list-group-item')->first()->link();
+        $client->click($link);
+        self::assertResponseStatusCodeSame(200);
+
+        self::assertSelectorExists('a:contains("Редактировать урок")');
+        self::assertSelectorExists('button:contains("Удалить урок")');
+        self::assertSelectorExists('#delete-lesson-form');
+    }
+
+    public function testShowLessonPageNotExistsActionButtonsForBaseUser(): void
+    {
+        $client = static::createClient();
+        $this->login($client);
+
+        $coursePage = $this->getCoursePageByCode('web-development-basics');
+        $crawler = $client->request('GET', $coursePage);
+        self::assertResponseIsSuccessful();
+
+        $link = $crawler->filter('.list-group-item')->first()->link();
+        $client->click($link);
+        self::assertResponseStatusCodeSame(200);
+
+        self::assertSelectorNotExists('a:contains("Редактировать урок")');
+        self::assertSelectorNotExists('button:contains("Удалить урок")');
+        self::assertSelectorNotExists('#delete-lesson-form');
     }
 
     public static function invalidLessonDataProvider(): array
@@ -284,5 +363,21 @@ class LessonControllerTest extends WebTestCase
         self::assertNotFalse($lesson);
 
         return $lesson->getId();
+    }
+
+    private function login(
+        KernelBrowser $client,
+        string $email = 'test-user@mail.ru',
+        string $password = 'password'
+    ): void {
+        $client->request('GET', '/login');
+        self::assertResponseIsSuccessful();
+
+        $client->submitForm('Войти', [
+            'email' => $email,
+            'password' => $password,
+            '_remember_me' => false,
+        ]);
+        self::assertResponseRedirects('/courses', 302);
     }
 }
