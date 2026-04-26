@@ -2,12 +2,15 @@
 
 namespace App\Tests\Controller\Security;
 
+use App\Tests\Traits\AuthenticationTestTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class RegisterControllerTest extends WebTestCase
 {
+    use AuthenticationTestTrait;
+
     public function testRegisterSuccessful(): void
     {
         $client = static::createClient();
@@ -48,18 +51,7 @@ class RegisterControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $client->request('GET', '/login');
-
-        self::assertResponseIsSuccessful();
-
-        $client->submitForm('Войти', [
-            'email' => 'test-user@mail.ru',
-            'password' => 'password',
-            '_remember_me' => false,
-        ]);
-
-        self::assertResponseRedirects('/courses', 302);
-        $client->followRedirect();
+        $this->loginAsUser($client);
 
         $client->request('GET', '/register');
         self::assertResponseRedirects('/user/profile', 302);

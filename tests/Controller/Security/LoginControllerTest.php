@@ -2,21 +2,19 @@
 
 namespace App\Tests\Controller\Security;
 
+use App\Tests\Traits\AuthenticationTestTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class LoginControllerTest extends WebTestCase
 {
+    use AuthenticationTestTrait;
+
     public function testLoginSuccessful(): void
     {
         $client = static::createClient();
 
-        $this->login($client);
-
-        self::assertResponseRedirects('/courses', 302);
-        $client->followRedirect();
-
+        $this->loginAsUser($client);
         self::assertSelectorTextContains('body', 'Курсы');
     }
 
@@ -24,7 +22,7 @@ class LoginControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $this->login($client, 'test-user@mail.ru', 'not-password');
+        $this->submitLoginForm($client, 'test-user@mail.ru', 'not-password');
 
         self::assertResponseRedirects('/login', 302);
         $client->followRedirect();
@@ -37,7 +35,7 @@ class LoginControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $this->login($client, 'billing-unavailable@mail.ru');
+        $this->submitLoginForm($client, 'billing-unavailable@mail.ru');
 
         self::assertResponseRedirects('/login', 302);
         $client->followRedirect();
@@ -50,14 +48,9 @@ class LoginControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $this->login($client);
-
-        self::assertResponseRedirects('/courses', 302);
-        $client->followRedirect();
-        self::assertResponseIsSuccessful();
+        $this->loginAsUser($client);
 
         $client->request('GET', '/login');
-
         self::assertResponseRedirects('/user/profile', 302);
     }
 
@@ -100,23 +93,5 @@ class LoginControllerTest extends WebTestCase
                 ],
             ],
         ];
-    }
-
-    private function login(
-        KernelBrowser $client,
-        string $email = 'test-user@mail.ru',
-        string $password = 'password'
-    ): void {
-        $client->request('GET', '/courses');
-        self::assertResponseIsSuccessful();
-
-        $client->clickLink('Войти');
-        self::assertResponseIsSuccessful();
-
-        $client->submitForm('Войти', [
-            'email' => $email,
-            'password' => $password,
-            '_remember_me' => false,
-        ]);
     }
 }

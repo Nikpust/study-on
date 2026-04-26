@@ -3,12 +3,14 @@
 namespace App\Tests\Controller;
 
 use App\Repository\CourseRepository;
+use App\Tests\Traits\AuthenticationTestTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class CourseControllerTest extends WebTestCase
 {
+    use AuthenticationTestTrait;
+
     public function testMainPageRedirectsToCourseIndex(): void
     {
         $client = static::createClient();
@@ -50,7 +52,7 @@ class CourseControllerTest extends WebTestCase
     public function testNewPageReturns403ForBaseUser(): void
     {
         $client = static::createClient();
-        $this->login($client);
+        $this->loginAsUser($client);
 
 
         $client->request('GET', '/courses/new');
@@ -60,7 +62,7 @@ class CourseControllerTest extends WebTestCase
     public function testEditPageReturns403ForBaseUser(): void
     {
         $client = static::createClient();
-        $this->login($client);
+        $this->loginAsUser($client);
 
         $courseId = $this->getCourseIdByCode('web-development-basics');
         $client->request('GET', '/courses/' . $courseId . '/edit');
@@ -70,7 +72,7 @@ class CourseControllerTest extends WebTestCase
     public function testEditPageReturns404ForMissingCourseForAdmin(): void
     {
         $client = static::createClient();
-        $this->login($client, 'test-admin@mail.ru');
+        $this->loginAsAdmin($client);
 
         $client->request('GET', '/courses/99999/edit');
         self::assertResponseStatusCodeSame(404);
@@ -79,10 +81,7 @@ class CourseControllerTest extends WebTestCase
     public function testCreateCourseWithValidData(): void
     {
         $client = static::createClient();
-        $this->login($client, 'test-admin@mail.ru');
-
-        $crawler = $client->request('GET', '/courses');
-        self::assertResponseIsSuccessful();
+        $crawler = $this->loginAsAdmin($client);
 
         self::assertCount(3, $crawler->filter('.card-body'));
 
@@ -107,9 +106,8 @@ class CourseControllerTest extends WebTestCase
     public function testCreateCourseWithInvalidData(array $formData, string $errorMessage): void
     {
         $client = static::createClient();
-        $this->login($client, 'test-admin@mail.ru');
+        $this->loginAsAdmin($client);
 
-        $client->request('GET', '/courses');
         $client->clickLink('Создать новый курс');
         self::assertResponseIsSuccessful();
 
@@ -122,10 +120,7 @@ class CourseControllerTest extends WebTestCase
     public function testEditCourseWithValidData(): void
     {
         $client = static::createClient();
-        $this->login($client, 'test-admin@mail.ru');
-
-        $crawler = $client->request('GET', '/courses');
-        self::assertResponseIsSuccessful();
+        $crawler = $this->loginAsAdmin($client);
 
         $link = $crawler->filter('.card-title a')->first()->link();
         $courseUrl = $link->getUri();
@@ -153,10 +148,7 @@ class CourseControllerTest extends WebTestCase
     public function testEditCourseWithInvalidData(array $formData, string $errorMessage): void
     {
         $client = static::createClient();
-        $this->login($client, 'test-admin@mail.ru');
-
-        $crawler = $client->request('GET', '/courses');
-        self::assertResponseIsSuccessful();
+        $crawler = $this->loginAsAdmin($client);
 
         $link = $crawler->filter('.card-title a')->first()->link();
         $client->click($link);
@@ -174,9 +166,8 @@ class CourseControllerTest extends WebTestCase
     public function testDeleteCourse(): void
     {
         $client = static::createClient();
-        $this->login($client, 'test-admin@mail.ru');
+        $crawler = $this->loginAsAdmin($client);
 
-        $crawler = $client->request('GET', '/courses');
         $link = $crawler->filter('.card-title a')->first()->link();
         $crawler = $client->click($link);
         self::assertResponseIsSuccessful();
@@ -194,7 +185,7 @@ class CourseControllerTest extends WebTestCase
     public function testDeleteCourseReturns403ForBaseUser(): void
     {
         $client = static::createClient();
-        $this->login($client);
+        $this->loginAsUser($client);
 
         $courseId = $this->getCourseIdByCode('web-development-basics');
 
@@ -205,10 +196,7 @@ class CourseControllerTest extends WebTestCase
     public function testCoursePageExistsActionButtonsForAdmin(): void
     {
         $client = static::createClient();
-        $this->login($client, 'test-admin@mail.ru');
-
-        $crawler = $client->request('GET', '/courses');
-        self::assertResponseIsSuccessful();
+        $crawler = $this->loginAsAdmin($client);
 
         self::assertSelectorExists('a:contains("Создать новый курс")');
 
@@ -225,10 +213,7 @@ class CourseControllerTest extends WebTestCase
     public function testCoursePageNotExistsActionButtonsForBaseUser(): void
     {
         $client = static::createClient();
-        $this->login($client);
-
-        $crawler = $client->request('GET', '/courses');
-        self::assertResponseIsSuccessful();
+        $crawler = $this->loginAsUser($client);
 
         self::assertSelectorNotExists('a:contains("Создать новый курс")');
 
@@ -320,21 +305,5 @@ class CourseControllerTest extends WebTestCase
         self::assertNotNull($course);
 
         return $course->getId();
-    }
-
-    private function login(
-        KernelBrowser $client,
-        string $email = 'test-user@mail.ru',
-        string $password = 'password'
-    ): void {
-        $client->request('GET', '/login');
-        self::assertResponseIsSuccessful();
-
-        $client->submitForm('Войти', [
-            'email' => $email,
-            'password' => $password,
-            '_remember_me' => false,
-        ]);
-        self::assertResponseRedirects('/courses', 302);
     }
 }
