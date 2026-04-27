@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Dto\Security\LoginDto;
 use App\Exception\BillingUnavailableException;
 use App\Service\BillingClient;
 use Psr\Cache\CacheItemPoolInterface;
@@ -19,6 +20,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Http\SecurityRequestAttributes;
 use Symfony\Component\Security\Http\Util\TargetPathTrait;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class BillingAuthenticator extends AbstractLoginFormAuthenticator
 {
@@ -29,17 +31,35 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly BillingClient $billingClient,
-        private readonly CacheItemPoolInterface $cache
+        private readonly CacheItemPoolInterface $cache,
+        private readonly ValidatorInterface $validator,
     ) {
     }
 
     public function authenticate(Request $request): Passport
     {
-        $email = $request->getPayload()->getString('email');
-        $password = $request->getPayload()->getString('password');
-        $rememberMe = $request->getPayload()->getBoolean('_remember_me');
+        $dto = new LoginDto();
+        $dto->email = $request->getPayload()->getString('email');
+        $dto->password = $request->getPayload()->getString('password');
 
-        $request->getSession()->set(SecurityRequestAttributes::LAST_USERNAME, $email);
+        $request->getSession()->set(SecurityRequestAttributes::LAST_USERNAME, $dto->email);
+
+        $errors = $this->validator->validate($dto);
+        if (count($errors) > 0) {
+            $fieldErrors = [];
+
+            foreach ($errors as $error) {
+                $fieldErrors[$error->getPropertyPath()][] = $error->getMessage();
+            }
+
+            $request->getSession()->set('login_validation_errors', $fieldErrors);
+
+            throw new CustomUserMessageAuthenticationException('Проверьте введённые данные.');
+        }
+
+        $email = $dto->email;
+        $password = $dto->password;
+        $rememberMe = $request->getPayload()->getBoolean('_remember_me');
 
         try {
             $data = $this->billingClient->auth($email, $password);

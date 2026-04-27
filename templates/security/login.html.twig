@@ -24,11 +24,52 @@
                 <a href="{{ path('app_course_index') }}" class="text-decoration-none">StudyOn!</a>
             </h1>
 
-            <label for="inputEmail">Email</label>
-            <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" autocomplete="email" required autofocus>
+            <div class="mb-3">
+                <label for="inputEmail">Email</label>
 
-            <label for="inputPassword">Пароль</label>
-            <input type="password" name="password" id="inputPassword" class="form-control" autocomplete="current-password" required>
+                <input
+                    type="email"
+                    value="{{ last_username }}"
+                    name="email" id="inputEmail"
+                    class="form-control {{ field_errors.email is defined ? 'is-invalid' : '' }}"
+                    autocomplete="email"
+                    required
+                    autofocus
+                    {% if field_errors.email is defined %}
+                        aria-describedby="login_email_error"
+                        aria-invalid="true"
+                    {% endif %}
+                >
+
+                {% for message in field_errors.email ?? [] %}
+                    <div class="invalid-feedback d-block" id="login_email_error">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <label for="inputPassword">Пароль</label>
+
+                <input
+                    type="password"
+                    name="password"
+                    id="inputPassword"
+                    class="form-control {{ field_errors.password is defined ? 'is-invalid' : '' }}"
+                    autocomplete="current-password"
+                    required
+                    {% if field_errors.password is defined %}
+                        aria-describedby="login_password_error"
+                        aria-invalid="true"
+                    {% endif %}
+                >
+
+                {% for message in field_errors.password ?? [] %}
+                    <div class="invalid-feedback d-block" id="login_password_error">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
 
             <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
 
