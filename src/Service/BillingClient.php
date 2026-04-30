@@ -35,16 +35,27 @@ readonly class BillingClient
         );
     }
 
-    public function getCurrentUser(string $token): array
+    public function getCurrentUser(string $apiToken): array
     {
         return $this->billingRequest(
             method: 'GET',
             path: '/api/v1/users/current',
-            token: $token,
+            apiToken: $apiToken,
         );
     }
 
-    private function billingRequest(string $method, string $path, ?array $data = null, ?string $token = null): array
+    public function getTokenByRefreshToken(string $refreshToken): array
+    {
+        return $this->billingRequest(
+            method: 'POST',
+            path: '/api/v1/token/refresh',
+            data: [
+                'refresh_token' => $refreshToken,
+            ],
+        );
+    }
+
+    private function billingRequest(string $method, string $path, ?array $data = null, ?string $apiToken = null): array
     {
         $curl = curl_init();
 
@@ -67,8 +78,8 @@ readonly class BillingClient
                 $options[CURLOPT_POSTFIELDS] = $json;
             }
 
-            if ($token !== null) {
-                $options[CURLOPT_HTTPHEADER][] = 'Authorization: Bearer ' . $token;
+            if ($apiToken !== null) {
+                $options[CURLOPT_HTTPHEADER][] = 'Authorization: Bearer ' . $apiToken;
             }
 
             curl_setopt_array($curl, $options);

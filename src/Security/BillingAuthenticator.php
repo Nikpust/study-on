@@ -5,7 +5,7 @@ namespace App\Security;
 use App\Dto\Security\LoginDto;
 use App\Exception\BillingUnavailableException;
 use App\Service\BillingClient;
-use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +31,6 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly BillingClient $billingClient,
-        private readonly CacheItemPoolInterface $cache,
         private readonly ValidatorInterface $validator,
     ) {
     }
@@ -75,16 +74,21 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
             );
         }
 
-        $token = $data['token'] ?? null;
-        if (!$token) {
+        $apiToken = $data['token'] ?? null;
+        $refreshToken = $data['refresh_token'] ?? null;
+        if (!$apiToken || !$refreshToken) {
             throw new CustomUserMessageAuthenticationException(
                 $data['message'] ?? 'Ошибка авторизации'
             );
         }
 
-        $userLoader = function () use ($token, $rememberMe) {
+        if ($rememberMe) {
+            $request->getSession()->set('refresh_token', $refreshToken);
+        }
+
+        $userLoader = function () use ($apiToken, $refreshToken) {
             try {
-                $currentUser = $this->billingClient->getCurrentUser($token);
+                $currentUser = $this->billingClient->getCurrentUser($apiToken);
             } catch (BillingUnavailableException) {
                 throw new CustomUserMessageAuthenticationException(
                     'Сервис временно недоступен. Попробуйте авторизоваться позднее.'
@@ -101,14 +105,8 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
 
             $user->setEmail($currentUser['username'] ?? '');
             $user->setRoles($currentUser['roles'] ?? []);
-            $user->setApiToken($token);
-
-            if ($rememberMe) {
-                $item = $this->cache->getItem('billing_token_' . hash('sha256', $user->getEmail()));
-                $item->set($token);
-                $item->expiresAfter(3600);
-                $this->cache->save($item);
-            }
+            $user->setApiToken($apiToken);
+            $user->setRefreshToken($refreshToken);
 
             return $user;
         };
@@ -124,11 +122,26 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
-            return new RedirectResponse($targetPath);
+        $targetUrl = $this->getTargetPath($request->getSession(), $firewallName)
+            ?? $this->urlGenerator->generate('app_course_index');
+
+        $response = new RedirectResponse($targetUrl);
+
+        $refreshToken = $request->getSession()->get('refresh_token');
+
+        if ($refreshToken) {
+            $response->headers->setCookie(
+                Cookie::create('refresh_token')
+                    ->withValue($refreshToken)
+                    ->withExpires(strtotime('+1 month'))
+                    ->withHttpOnly(true)
+                    ->withSecure(false)
+                    ->withSameSite('lax')
+                    ->withPath('/')
+            );
         }
 
-        return new RedirectResponse($this->urlGenerator->generate('app_course_index'));
+        return $response;
     }
 
     protected function getLoginUrl(Request $request): string
