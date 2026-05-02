@@ -1,17 +1,17 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ course.title }} / Курсы / StudyOn{% endblock %}
+{% block title %}{{ courseInfo.course.title }} / Курсы / StudyOn{% endblock %}
 
 {% block body %}
     <a href="{{ path('app_course_index') }}" class="text-decoration-none fw-medium text-primary">↶ Назад к курсам</a>
 
     <div class="d-flex flex-column gap-1">
         <div class="d-flex justify-content-between align-items-center gap-4 mb-2 border-bottom border-primary">
-            <h1 class="text-break">{{ course.title }}</h1>
+            <h1 class="text-break">{{ courseInfo.course.title }}</h1>
 
             {% if app.user and is_granted('ROLE_SUPER_ADMIN') %}
                 <div class="d-flex gap-2">
-                    <a href="{{ path('app_course_edit', {'id': course.id}) }}" class="btn btn-primary">
+                    <a href="{{ path('app_course_edit', {'id': courseInfo.course.id}) }}" class="btn btn-primary">
                         Редактировать курс
                     </a>
 
@@ -19,11 +19,57 @@
                         Удалить курс
                     </button>
                 </div>
+            {% elseif app.user and courseInfo.type == 'buy' and courseInfo.payment %}
+                <span class="text-primary fw-medium">
+                    Курс куплен
+                </span>
+            {% elseif app.user
+                and courseInfo.type == 'rent'
+                and courseInfo.payment
+                and courseInfo.payment.expires_at is defined
+                and courseInfo.payment.expires_at is not null
+            %}
+                <span class="text-primary fw-medium">
+                    Ваша аренда дейсвтует до
+                    {{ courseInfo.payment.expires_at|date('d.m.Y H:i', 'Europe/Moscow') }}
+                </span>
+            {% elseif courseInfo.type == 'buy' or courseInfo.type == 'rent' %}
+                {% if app.user %}
+                    <a
+                        href="#"
+                        class="btn btn-primary {% if not courseInfo.can_pay %}disabled{% endif %}"
+                        {% if not courseInfo.can_pay %}
+                            aria-disabled="true"
+                            tabindex="-1"
+                        {% endif %}
+                    >
+                        {% if courseInfo.type == 'buy' %}
+                            Купить за
+                            {{ courseInfo.price }} ₽
+                        {% elseif courseInfo.type == 'rent' %}
+                            Арендовать за
+                            {{ courseInfo.price }} ₽ / нед.
+                        {% endif %}
+                    </a>
+                {% elseif not app.user %}
+                    <a href="{{ path('app_login') }}" class="btn btn-outline-primary">
+                        Войдите, чтобы
+                        {% if courseInfo.type == 'buy' %}
+                            купить за {{ courseInfo.price }} ₽
+                        {% elseif courseInfo.type == 'rent' %}
+                            арендовать за {{ courseInfo.price }} ₽ / нед.
+                        {% endif %}
+                    </a>
+                {% endif %}
+            {% elseif courseInfo.type == 'free' %}
+                <span class="text-primary fw-medium">
+                    Курс бесплатный
+                </span>
             {% endif %}
         </div>
 
-        {% if course.description %}
-            <p>{{ course.description }}</p>
+        {% if courseInfo.course.description %}
+            <p>{{ courseInfo.course.description }}</p>
         {% endif %}
     </div>
 
@@ -32,15 +78,15 @@
             <h2>Уроки:</h2>
 
             {% if app.user and is_granted('ROLE_SUPER_ADMIN') %}
-                <a href="{{ path('app_lesson_new', {'course_id': course.id}) }}" class="btn btn-outline-primary">
+                <a href="{{ path('app_lesson_new', {'course_id': courseInfo.course.id}) }}" class="btn btn-outline-primary">
                     Добавить урок
                 </a>
             {% endif %}
         </div>
 
-        {% if course.sortedLessons|length > 0 %}
+        {% if courseInfo.course.sortedLessons|length > 0 %}
             <div class="list-group">
-                {% for lesson in course.sortedLessons %}
+                {% for lesson in courseInfo.course.sortedLessons %}
                     <a
                         href="{{ path('app_lesson_show', {'id': lesson.id}) }}"
                         class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
