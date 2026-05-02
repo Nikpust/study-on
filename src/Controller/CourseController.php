@@ -67,7 +67,10 @@ final class CourseController extends AbstractController
     public function show(Course $course): Response
     {
         return $this->render('course/show.html.twig', [
-            'course' => $course,
+            'courseInfo' => $this->paymentInfoProvider->getCoursePaymentInfo(
+                $course,
+                $this->getUser()
+            ),
         ]);
     }
 

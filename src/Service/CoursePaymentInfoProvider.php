@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-use App\Exception\BillingUnavailableException;
+use App\Entity\Course;
 use App\Security\User;
 
 final readonly class CoursePaymentInfoProvider
@@ -18,16 +18,12 @@ final readonly class CoursePaymentInfoProvider
 
         $paidUserCourses = [];
         if ($user instanceof User) {
-            try {
-                $paidUserCourses = $this->billingClient->getTransactions($user->getApiToken(), [
-                    'type' => 'payment',
-                    'skip_expired' => true,
-                ]);
+            $paidUserCourses = $this->billingClient->getTransactions($user->getApiToken(), [
+                'type' => 'payment',
+                'skip_expired' => true,
+            ]);
 
-                $paidUserCourses = $this->indexByCode($paidUserCourses, 'course_code');
-            } catch (BillingUnavailableException $e) {
-                throw new BillingUnavailableException($e->getMessage());
-            }
+            $paidUserCourses = $this->indexByCode($paidUserCourses, 'course_code');
         }
 
         $result = [];
@@ -51,6 +47,40 @@ final readonly class CoursePaymentInfoProvider
         }
 
         return $result;
+    }
+
+    public function getCoursePaymentInfo(Course $course, ?User $user): array
+    {
+        $code = $course->getCode();
+
+        $billingCourse = $this->billingClient->getCourse($code);
+
+        if (($billingCourse['_status_code'] ?? 500) !== 200) {
+            $billingCourse = [
+                'code' => $code,
+                'type' => 'free',
+                'price' => null,
+            ];
+        }
+
+        $payment = null;
+
+        if ($user instanceof User) {
+            $transactions = $this->billingClient->getTransactions($user->getApiToken(), [
+                'type' => 'payment',
+                'course_code' => $code,
+                'skip_expired' => true,
+            ]);
+
+            $payment = $transactions[0] ?? null;
+        }
+
+        return [
+            'course' => $course,
+            'type' => $billingCourse['type'],
+            'price' => $billingCourse['price'] ?? null,
+            'payment' => $payment,
+        ];
     }
 
     private function indexByCode(array $items, string $key = 'code'): array
