@@ -55,6 +55,42 @@ readonly class BillingClient
         );
     }
 
+    public function getCourses(): array
+    {
+        return $this->billingRequest(
+            method: 'GET',
+            path: '/api/v1/courses',
+        );
+    }
+
+    public function getCourse(string $courseCode): array
+    {
+        return $this->billingRequest(
+            method: 'GET',
+            path: '/api/v1/courses/' . $courseCode,
+        );
+    }
+
+    public function getTransactions(string $apiToken, array $filters = []): array
+    {
+        $query = $filters === [] ? '' : '?' . http_build_query($filters);
+
+        return $this->billingRequest(
+            method: 'GET',
+            path: '/api/v1/transactions' . $query,
+            apiToken: $apiToken,
+        );
+    }
+
+    public function payCourse(string $apiToken, string $courseCode): array
+    {
+        return $this->billingRequest(
+            method: 'POST',
+            path: '/api/v1/courses/' . $courseCode . '/pay',
+            apiToken: $apiToken,
+        );
+    }
+
     private function billingRequest(string $method, string $path, ?array $data = null, ?string $apiToken = null): array
     {
         $curl = curl_init();
