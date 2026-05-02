@@ -64,6 +64,7 @@ final readonly class CoursePaymentInfoProvider
         }
 
         $payment = null;
+        $canPay = false;
 
         if ($user instanceof User) {
             $transactions = $this->billingClient->getTransactions($user->getApiToken(), [
@@ -73,6 +74,16 @@ final readonly class CoursePaymentInfoProvider
             ]);
 
             $payment = $transactions[0] ?? null;
+            if ($payment === null) {
+                $currentUser = $this->billingClient->getCurrentUser($user->getApiToken());
+
+                if (in_array($billingCourse['type'], ['buy', 'rent'], true)) {
+                    $balance = (float) ($currentUser['balance'] ?? 0);
+                    $price = (float) ($billingCourse['price'] ?? 0);
+
+                    $canPay = $balance >= $price;
+                }
+            }
         }
 
         return [
@@ -80,6 +91,7 @@ final readonly class CoursePaymentInfoProvider
             'type' => $billingCourse['type'],
             'price' => $billingCourse['price'] ?? null,
             'payment' => $payment,
+            'can_pay' => $canPay,
         ];
     }
 
