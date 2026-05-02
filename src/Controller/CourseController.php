@@ -6,7 +6,9 @@ use App\Entity\Course;
 use App\Exception\BillingUnavailableException;
 use App\Form\CourseType;
 use App\Repository\CourseRepository;
+use App\Security\User;
 use App\Service\CoursePaymentInfoProvider;
+use App\Service\BillingClient;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +21,7 @@ final class CourseController extends AbstractController
 {
     public function __construct(
         private readonly CoursePaymentInfoProvider $paymentInfoProvider,
+        private readonly BillingClient $billingClient,
     ) {
     }
 
@@ -72,6 +75,39 @@ final class CourseController extends AbstractController
                 $this->getUser()
             ),
         ]);
+    }
+
+    #[Route('/{id}/pay', name: 'app_course_pay', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function pay(Course $course): Response
+    {
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        try {
+            $data = $this->billingClient->payCourse($user->getApiToken(), (string) $course->getCode());
+
+            if (($data['_status_code'] ?? 500) === 200) {
+                $this->addFlash(
+                    'success',
+                    'Курс успешно оплачен!'
+                );
+            } else {
+                $this->addFlash(
+                    'danger',
+                    $data['message'] ?? 'Оплата временно недоступна. Попробуйте позднее.'
+                );
+            }
+        } catch (BillingUnavailableException $e) {
+            $this->addFlash('danger', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('app_course_show', [
+            'id' => $course->getId(),
+        ], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/{id}/edit', name: 'app_course_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]

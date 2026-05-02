@@ -1,0 +1,45 @@
+{% if app.user and (courseInfo.type == 'buy' or courseInfo.type == 'rent') and not courseInfo.payment %}
+    <div
+        class="modal fade"
+        id="course-payment-modal"
+        tabindex="-1"
+        aria-labelledby="course-payment-modal"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fs-5" id="course-payment-modal">
+                        Подтверждение оплаты
+                    </h5>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+
+                <div class="modal-body">
+                    Вы действительно хотите
+                    {% if courseInfo.type == 'buy' %}
+                        купить курс
+                    {% elseif courseInfo.type == 'rent' %}
+                        арендовать курс на неделю
+                    {% endif %}
+                    «{{ courseInfo.course.title }}»
+                    за
+                    <span class="fw-medium text-primary">{{ courseInfo.price }} ₽</span>?
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Отмена
+                    </button>
+
+                    <form method="post" action="{{ path('app_course_pay', {'id': courseInfo.course.id}) }}">
+                        <button type="submit" class="btn btn-primary">
+                            Подтвердить оплату
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}

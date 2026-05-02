@@ -35,13 +35,12 @@
                 </span>
             {% elseif courseInfo.type == 'buy' or courseInfo.type == 'rent' %}
                 {% if app.user %}
-                    <a
-                        href="#"
-                        class="btn btn-primary {% if not courseInfo.can_pay %}disabled{% endif %}"
-                        {% if not courseInfo.can_pay %}
-                            aria-disabled="true"
-                            tabindex="-1"
-                        {% endif %}
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#course-payment-modal"
+                        {% if not courseInfo.can_pay %}disabled{% endif %}
                     >
                         {% if courseInfo.type == 'buy' %}
                             Купить за
@@ -50,7 +49,7 @@
                             Арендовать за
                             {{ courseInfo.price }} ₽ / нед.
                         {% endif %}
-                    </a>
+                    </button>
                 {% elseif not app.user %}
                     <a href="{{ path('app_login') }}" class="btn btn-outline-primary">
                         Войдите, чтобы
@@ -102,5 +101,6 @@
         {% endif %}
     </div>
 
+    {{ include('course/_payment_modal.html.twig', { courseInfo: courseInfo }) }}
     {{ include('course/_delete_form.html.twig') }}
 {% endblock %}
