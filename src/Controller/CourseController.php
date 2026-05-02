@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Course;
+use App\Exception\BillingUnavailableException;
 use App\Form\CourseType;
 use App\Repository\CourseRepository;
+use App\Service\CoursePaymentInfoProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,11 +17,28 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/courses')]
 final class CourseController extends AbstractController
 {
+    public function __construct(
+        private readonly CoursePaymentInfoProvider $paymentInfoProvider,
+    ) {
+    }
+
     #[Route(name: 'app_course_index', methods: ['GET'])]
     public function index(CourseRepository $courseRepository): Response
     {
+        $courses = [];
+        $error = null;
+
+        try {
+            $courses = $this->paymentInfoProvider->getCoursesWithPaymentInfo(
+                $courseRepository->findAll(),
+                $this->getUser()
+            );
+        } catch (BillingUnavailableException $e) {
+            $error = $e->getMessage();
+        }
         return $this->render('course/index.html.twig', [
-            'courses' => $courseRepository->findAll(),
+            'courses' => $courses,
+            'error' => $error,
         ]);
     }
 
