@@ -73,7 +73,9 @@ readonly class BillingClient
 
     public function getTransactions(string $apiToken, array $filters = []): array
     {
-        $query = $filters === [] ? '' : '?' . http_build_query($filters);
+        $query = $filters === [] ? '' : '?' . http_build_query([
+            'filter' => $filters,
+        ]);
 
         return $this->billingRequest(
             method: 'GET',
