@@ -26,7 +26,7 @@ class CourseControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/courses');
         self::assertResponseStatusCodeSame(200);
 
-        self::assertCount(3, $crawler->filter('.card-body'));
+        self::assertCount($this->getCountCourses(), $crawler->filter('.card-body'));
     }
 
     public function testShowDisplaysExistingCourseWithLessons(): void
@@ -83,7 +83,9 @@ class CourseControllerTest extends WebTestCase
         $client = static::createClient();
         $crawler = $this->loginAsAdmin($client);
 
-        self::assertCount(3, $crawler->filter('.card-body'));
+        $countCourse = $this->getCountCourses();
+
+        self::assertCount($countCourse, $crawler->filter('.card-body'));
 
         $client->clickLink('Создать новый курс');
         self::assertResponseIsSuccessful();
@@ -98,8 +100,8 @@ class CourseControllerTest extends WebTestCase
         $crawler = $client->followRedirect();
         self::assertResponseIsSuccessful();
 
-        self::assertCount(4, $crawler->filter('.card-body'));
-        self::assertStringContainsString('Новый тестовый курс', $crawler->filter('.courses-grid')->text());
+        self::assertCount($countCourse + 1, $crawler->filter('.card-body'));
+        self::assertStringContainsString('Новый тестовый курс', $crawler->filter('.row')->text());
     }
 
     #[DataProvider('invalidCourseDataProvider')]
@@ -168,6 +170,8 @@ class CourseControllerTest extends WebTestCase
         $client = static::createClient();
         $crawler = $this->loginAsAdmin($client);
 
+        $countCourse = $this->getCountCourses();
+
         $link = $crawler->filter('.card-title a')->first()->link();
         $crawler = $client->click($link);
         self::assertResponseIsSuccessful();
@@ -179,7 +183,7 @@ class CourseControllerTest extends WebTestCase
         $crawler = $client->followRedirect();
         self::assertResponseIsSuccessful();
 
-        self::assertCount(2, $crawler->filter('.card-body'));
+        self::assertCount($countCourse - 1, $crawler->filter('.card-body'));
     }
 
     public function testDeleteCourseReturns403ForBaseUser(): void
@@ -305,5 +309,12 @@ class CourseControllerTest extends WebTestCase
         self::assertNotNull($course);
 
         return $course->getId();
+    }
+
+    private function getCountCourses(): int
+    {
+        $container = static::getContainer();
+
+        return $container->get(CourseRepository::class)->count([]);
     }
 }
