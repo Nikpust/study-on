@@ -30,7 +30,7 @@
                 and courseInfo.payment.expires_at is not null
             %}
                 <span class="text-primary fw-medium">
-                    Ваша аренда дейсвтует до
+                    Ваша аренда действует до
                     {{ courseInfo.payment.expires_at|date('d.m.Y H:i', 'Europe/Moscow') }}
                 </span>
             {% elseif courseInfo.type == 'buy' or courseInfo.type == 'rent' %}
