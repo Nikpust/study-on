@@ -39,4 +39,9 @@ trait AuthenticationTestTrait
     {
         return $this->login($client, 'test-admin@mail.ru', 'password');
     }
+
+    protected function loginAsPoorUser(KernelBrowser $client): Crawler
+    {
+        return $this->login($client, 'poor-user@mail.ru', 'password');
+    }
 }

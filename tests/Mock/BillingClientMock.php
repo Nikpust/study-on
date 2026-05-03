@@ -63,7 +63,7 @@ final readonly class BillingClientMock extends BillingClient
                 'type' => 'payment',
                 'course_code' => 'rest-api-development',
                 'amount' => '59.5',
-                'expires_at' => '2026-05-09T10:00:00+00:00',
+                'expires_at' => '2099-05-09T10:00:00+00:00',
             ],
             [
                 'id' => 3,
@@ -75,6 +75,8 @@ final readonly class BillingClientMock extends BillingClient
             ],
         ],
         'admin-jwt-token' => [],
+        'poor-user-jwt-token' => [],
+        'jwt-token' => [],
     ];
 
     public function __construct()
@@ -93,6 +95,11 @@ final readonly class BillingClientMock extends BillingClient
             'admin-refresh-token' => [
                 'token' => 'admin-jwt-token',
                 'refresh_token' => 'admin-refresh-token',
+                '_status_code' => 200,
+            ],
+            'poor-user-refresh-token' => [
+                'token' => 'poor-user-jwt-token',
+                'refresh_token' => 'poor-user-refresh-token',
                 '_status_code' => 200,
             ],
             'refresh-token' => [
@@ -185,6 +192,18 @@ final readonly class BillingClientMock extends BillingClient
                 'balance' => 0.0,
                 '_status_code' => 200,
             ],
+            'poor-user-jwt-token' => [
+                'username' => 'poor-user@mail.ru',
+                'roles' => ['ROLE_USER'],
+                'balance' => 0.0,
+                '_status_code' => 200,
+            ],
+            'jwt-token' => [
+                'username' => 'new-user@mail.ru',
+                'roles' => ['ROLE_USER'],
+                'balance' => 2000.0,
+                '_status_code' => 200,
+            ],
             default => [
                 'message' => 'Invalid token.',
                 '_status_code' => 401,
@@ -253,7 +272,7 @@ final readonly class BillingClientMock extends BillingClient
             'database-design-postgresql' => [
                 'success' => true,
                 'course_type' => 'rent',
-                'expires_at' => '2026-05-08T13:46:07+00:00',
+                'expires_at' => '2099-05-08T13:46:07+00:00',
                 '_status_code' => 200,
             ],
             'web-development-basics' => [
