@@ -12,7 +12,7 @@ class LessonControllerTest extends WebTestCase
 {
     use AuthenticationTestTrait;
 
-    public function testShowDisplaysExistingLessonForAuthorizedUser(): void
+    public function testShowDisplaysFreeCourseLessonForAuthorizedUser(): void
     {
         $client = static::createClient();
         $this->loginAsUser($client);
@@ -29,7 +29,7 @@ class LessonControllerTest extends WebTestCase
         self::assertSame($coursePage, $href);
     }
 
-    public function testShowRedirectsUnauthorizedUserToLogin(): void
+    public function testShowFreeCourseLessonRedirectsUnauthorizedUserToLogin(): void
     {
         $client = static::createClient();
 
@@ -40,6 +40,58 @@ class LessonControllerTest extends WebTestCase
         $link = $crawler->filter('.list-group-item')->first()->link();
         $client->click($link);
         self::assertResponseRedirects('/login', 302);
+    }
+
+    public function testShowBoughtCourseLessonForAuthorizedUser(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $coursePage = $this->getCoursePageByCode('symfony-basics');
+        $crawler = $client->request('GET', $coursePage);
+        self::assertResponseIsSuccessful();
+
+        $link = $crawler->filter('.list-group-item')->first()->link();
+        $crawler = $client->click($link);
+        self::assertResponseStatusCodeSame(200);
+
+        $href = $crawler->filter('h4 a')->attr('href');
+        self::assertSame($this->getCoursePageByCode('symfony-basics'), $href);
+    }
+
+    public function testShowRentedCourseLessonForAuthorizedUser(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $coursePage = $this->getCoursePageByCode('rest-api-development');
+        $crawler = $client->request('GET', $coursePage);
+        self::assertResponseIsSuccessful();
+
+        $link = $crawler->filter('.list-group-item')->first()->link();
+        $crawler = $client->click($link);
+        self::assertResponseStatusCodeSame(200);
+
+        $href = $crawler->filter('h4 a')->attr('href');
+        self::assertSame($this->getCoursePageByCode('rest-api-development'), $href);
+    }
+
+    public function testShowUnpaidBuyCourseLessonReturns403ForAuthorizedUser(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $client->request('GET', $this->getFirstLessonPageByCode('php-backend-development'));
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testShowUnpaidRentCourseLessonReturns403ForAuthorizedUser(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $client->request('GET', $this->getFirstLessonPageByCode('database-design-postgresql'));
+        self::assertResponseStatusCodeSame(403);
     }
 
     public function testShow404ForMissingLesson(): void
@@ -251,7 +303,7 @@ class LessonControllerTest extends WebTestCase
         self::assertSelectorExists('#delete-lesson-form');
     }
 
-    public function testShowLessonPageNotExistsActionButtonsForBaseUser(): void
+    public function testShowFreeCourseLessonPageNotExistsActionButtonsForBaseUser(): void
     {
         $client = static::createClient();
         $this->loginAsUser($client);
@@ -357,6 +409,11 @@ class LessonControllerTest extends WebTestCase
     private function getCoursePageByCode(string $code): string
     {
         return '/courses/' . $this->getCourseIdByCode($code);
+    }
+
+    private function getFirstLessonPageByCode(string $code): string
+    {
+        return '/lessons/' . $this->getFirstLessonId($code);
     }
 
     private function getFirstLessonId(string $code): int

@@ -29,7 +29,7 @@ class CourseControllerTest extends WebTestCase
         self::assertCount($this->getCountCourses(), $crawler->filter('.card-body'));
     }
 
-    public function testShowDisplaysExistingCourseWithLessons(): void
+    public function testShowDisplaysFreeCourseWithLessons(): void
     {
         $client = static::createClient();
 
@@ -39,6 +39,152 @@ class CourseControllerTest extends WebTestCase
 
         self::assertSelectorTextContains('h1', 'Основы веб-разработки');
         self::assertCount(4, $crawler->filter('.list-group-item'));
+    }
+
+    public function testIndexDisplaysCoursePricesForGuest(): void
+    {
+        $client = static::createClient();
+
+        $crawler = $client->request('GET', '/courses');
+        self::assertResponseIsSuccessful();
+
+        $text = $crawler->text();
+
+        self::assertStringContainsString('459.0', $text);
+        self::assertStringContainsString('99.5', $text);
+    }
+
+    public function testShowPaidCourseForGuestDisplaysLoginLink(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', $this->getCoursePageByCode('php-backend-development'));
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorExists('a[href="/login"]');
+        self::assertSelectorTextContains('body', '459.0');
+        self::assertSelectorNotExists('#course-payment-modal');
+    }
+
+    public function testShowBoughtCourseForUserDisplaysBoughtStatus(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $client->request('GET', $this->getCoursePageByCode('symfony-basics'));
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorTextContains('span', 'Курс куплен');
+        self::assertSelectorNotExists('#course-payment-modal');
+    }
+
+    public function testShowRentedCourseForUserDisplaysRentDate(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $client->request('GET', $this->getCoursePageByCode('rest-api-development'));
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorTextContains('span', 'Ваша аренда действует до');
+        self::assertSelectorNotExists('#course-payment-modal');
+    }
+
+    public function testShowUnpaidBuyCourseForUserDisplaysPaymentModal(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $client->request('GET', $this->getCoursePageByCode('php-backend-development'));
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorExists('button[data-bs-target="#course-payment-modal"]');
+        self::assertSelectorNotExists('button[data-bs-target="#course-payment-modal"][disabled]');
+        self::assertSelectorExists('#course-payment-modal');
+        self::assertSelectorTextContains('body', '459.0');
+    }
+
+    public function testShowUnpaidRentCourseForUserDisplaysPaymentModal(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $client->request('GET', $this->getCoursePageByCode('database-design-postgresql'));
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorExists('button[data-bs-target="#course-payment-modal"]');
+        self::assertSelectorNotExists('button[data-bs-target="#course-payment-modal"][disabled]');
+        self::assertSelectorExists('#course-payment-modal');
+        self::assertSelectorTextContains('body', '99.5');
+    }
+
+    public function testShowUnpaidCourseWithInsufficientFundsDisplaysDisabledPaymentButton(): void
+    {
+        $client = static::createClient();
+        $this->loginAsPoorUser($client);
+
+        $client->request('GET', $this->getCoursePageByCode('php-backend-development'));
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorExists('button[data-bs-target="#course-payment-modal"][disabled]');
+        self::assertSelectorExists('#course-payment-modal');
+    }
+
+    public function testPayCourseSuccessfullyRedirectsBackToCourseWithFlashMessage(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $courseId = $this->getCourseIdByCode('php-backend-development');
+
+        $crawler = $client->request('GET', '/courses/' . $courseId);
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorExists('button[data-bs-target="#course-payment-modal"]');
+        $form = $crawler->filter('#course-payment-modal form')->form();
+
+        $client->submit($form);
+        self::assertResponseRedirects('/courses/' . $courseId, 303);
+
+        $client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.alert-success', 'Курс успешно оплачен');
+    }
+
+    public function testPayCourseWithInsufficientFundsRedirectsBackToCourseWithError(): void
+    {
+        $client = static::createClient();
+        $this->loginAsPoorUser($client);
+
+        $courseId = $this->getCourseIdByCode('php-backend-development');
+
+        $crawler = $client->request('GET', '/courses/' . $courseId);
+        self::assertResponseIsSuccessful();
+
+        self::assertSelectorExists('button[data-bs-target="#course-payment-modal"][disabled]');
+        $form = $crawler->filter('#course-payment-modal form')->form();
+
+        $client->submit($form);
+        self::assertResponseRedirects('/courses/' . $courseId, 303);
+
+        $client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.alert-danger', 'недостаточно средств');
+    }
+
+    public function testPayFreeCourseRedirectsBackToCourseWithError(): void
+    {
+        $client = static::createClient();
+        $this->loginAsUser($client);
+
+        $courseId = $this->getCourseIdByCode('web-development-basics');
+
+        $client->request('POST', '/courses/' . $courseId . '/pay');
+        self::assertResponseRedirects('/courses/' . $courseId, 303);
+
+        $client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.alert-danger', 'Бесплатный курс не требует оплаты');
     }
 
     public function testShowReturns404ForMissingCourse(): void
@@ -309,6 +455,11 @@ class CourseControllerTest extends WebTestCase
         self::assertNotNull($course);
 
         return $course->getId();
+    }
+
+    private function getCoursePageByCode(string $code): string
+    {
+        return '/courses/' . $this->getCourseIdByCode($code);
     }
 
     private function getCountCourses(): int
