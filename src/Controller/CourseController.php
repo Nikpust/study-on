@@ -69,11 +69,17 @@ final class CourseController extends AbstractController
     #[Route('/{id}', name: 'app_course_show', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function show(Course $course): Response
     {
-        return $this->render('course/show.html.twig', [
-            'courseInfo' => $this->paymentInfoProvider->getCoursePaymentInfo(
+        try {
+            $courseInfo = $this->paymentInfoProvider->getCoursePaymentInfo(
                 $course,
                 $this->getUser()
-            ),
+            );
+        } catch (BillingUnavailableException $e) {
+            $this->addFlash('danger', $e->getMessage());
+            return $this->redirectToRoute('app_course_index', [], Response::HTTP_SEE_OTHER);
+        }
+        return $this->render('course/show.html.twig', [
+            'courseInfo' => $courseInfo,
         ]);
     }
 
