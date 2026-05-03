@@ -244,7 +244,10 @@ final readonly class BillingClientMock extends BillingClient
             return $transactions;
         }
 
-        return $this->applyTransactionFilters($transactions, $filters);
+        return [
+            ...$this->applyTransactionFilters($transactions, $filters),
+            '_status_code' => 200,
+        ];
     }
 
     public function payCourse(string $apiToken, string $courseCode): array
@@ -289,13 +292,15 @@ final readonly class BillingClientMock extends BillingClient
     private function applyTransactionFilters(array $transactions, array $filters): array
     {
         if (($filters['type'] ?? null) !== null) {
+            $types = (array) $filters['type'];
+
             $transactions = array_filter(
                 $transactions,
-                static fn (array $transaction): bool => $transaction['type'] === $filters['type']
+                static fn (array $transaction): bool => in_array($transaction['type'], $types, true)
             );
         }
 
-        if (($filters['course_code'] ?? null) !== null) {
+        if (!empty($filters['course_code'])) {
             $transactions = array_filter(
                 $transactions,
                 static fn (array $transaction): bool => $transaction['course_code'] === $filters['course_code']
