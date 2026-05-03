@@ -95,6 +95,17 @@ final readonly class CoursePaymentInfoProvider
         ];
     }
 
+    public function isCourseAvailable(Course $course, ?User $user): bool
+    {
+        $courseInfo = $this->getCoursePaymentInfo($course, $user);
+
+        if ($courseInfo['type'] === 'free') {
+            return true;
+        }
+
+        return $courseInfo['payment'] !== null;
+    }
+
     private function indexByCode(array $items, string $key = 'code'): array
     {
         $result = [];

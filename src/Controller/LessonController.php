@@ -6,16 +6,23 @@ use App\Entity\Lesson;
 use App\Entity\Course;
 use App\Form\LessonType;
 use App\Repository\CourseRepository;
+use App\Service\CoursePaymentInfoProvider;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/lessons')]
 final class LessonController extends AbstractController
 {
+    public function __construct(
+        private readonly CoursePaymentInfoProvider $paymentInfoProvider,
+    ) {
+    }
+
     #[Route('/new', name: 'app_lesson_new', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_SUPER_ADMIN')]
     public function new(
@@ -55,6 +62,10 @@ final class LessonController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function show(Lesson $lesson): Response
     {
+        if (!$this->paymentInfoProvider->isCourseAvailable($lesson->getCourse(), $this->getUser())) {
+            throw new AccessDeniedException('Оплатите курс для полного доступа к урокам.');
+        }
+
         return $this->render('lesson/show.html.twig', [
             'lesson' => $lesson,
             'course' => $lesson->getCourse()
