@@ -76,7 +76,13 @@ class UserProvider implements UserProviderInterface
             throw new UnsupportedUserException(sprintf('Invalid user class "%s".', $user::class));
         }
 
-        if (!$this->jwtDecoder->isExpired($user->getApiToken())) {
+        try {
+            $tokenExpired = $this->jwtDecoder->isExpired($user->getApiToken());
+        } catch (\InvalidArgumentException) {
+            $tokenExpired = true;
+        }
+
+        if (!$tokenExpired) {
             return $user;
         }
 
