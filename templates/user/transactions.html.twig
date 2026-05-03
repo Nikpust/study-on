@@ -11,8 +11,10 @@
         <div class="d-flex flex-column card-body p-4 p-md-5 gap-3">
             <div>
                 <h1 class="h3 mb-1">История транзакций</h1>
-                <p class="text-secondary mb-0">Список пополнений и покупок курсов</p>
+                <p class="text-secondary mb-0">Список пополнений баланса и списаний за покупку курсов</p>
             </div>
+
+            {{ include('user/_transaction_filters.html.twig', { filters: filters }) }}
 
             {% if transactions is not empty %}
                 <div class="table-responsive border rounded-2">
@@ -48,7 +50,10 @@
 
                                 <td>
                                     {% if transaction.course is defined and transaction.course %}
-                                        <a href="{{ path('app_course_show', {'id': transaction.course.id}) }}" class="text-decoration-none text-primary">
+                                        <a
+                                            href="{{ path('app_course_show', {'id': transaction.course.id}) }}"
+                                            class="text-decoration-none text-primary"
+                                        >
                                             {{ transaction.course.title }}
                                         </a>
                                     {% else %}

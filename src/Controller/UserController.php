@@ -7,6 +7,7 @@ use App\Repository\CourseRepository;
 use App\Security\User;
 use App\Service\BillingClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -45,15 +46,17 @@ final class UserController extends AbstractController
     }
 
     #[Route('/transactions', name: 'transactions', methods: ['GET'])]
-    public function transactions(): Response
+    public function transactions(Request $request): Response
     {
         $user = $this->getUser();
         if (!$user instanceof User) {
             throw $this->createAccessDeniedException();
         }
 
+        $filters = $request->query->all('filter');
+
         try {
-            $transactions = $this->billingClient->getTransactions($user->getApiToken());
+            $transactions = $this->billingClient->getTransactions($user->getApiToken(), $filters);
 
             if (($transactions['_status_code'] ?? 500) !== 200) {
                 $this->addFlash(
@@ -79,6 +82,7 @@ final class UserController extends AbstractController
 
         return $this->render('user/transactions.html.twig', [
             'transactions' => $transactions,
+            'filters' => $filters,
         ]);
     }
 }
