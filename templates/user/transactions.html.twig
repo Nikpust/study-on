@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}История транзакций / StudyOn{% endblock %}
+
+{% block body %}
+    <a href="{{ path('app_user_profile') }}" class="text-decoration-none fw-medium text-primary">
+        ↶ Назад в профиль
+    </a>
+
+    <div class="card rounded-4">
+        <div class="d-flex flex-column card-body p-4 p-md-5 gap-3">
+            <div>
+                <h1 class="h3 mb-1">История транзакций</h1>
+                <p class="text-secondary mb-0">Список пополнений и покупок курсов</p>
+            </div>
+
+            {% if transactions is not empty %}
+                <div class="table-responsive border rounded-2">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-primary">
+                        <tr>
+                            <th scope="col">Дата</th>
+                            <th scope="col">Тип операции</th>
+                            <th scope="col">Курс</th>
+                            <th scope="col">Сумма</th>
+                            <th scope="col">Срок аренды (до)</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        {% for transaction in transactions %}
+                            <tr>
+                                <td class="text-secondary">
+                                    {{ transaction.created_at|date('d.m.Y H:i') }}
+                                </td>
+
+                                <td>
+                                    {% if transaction.type == 'deposit' %}
+                                        <span class="badge text-bg-success">
+                                            Пополнение
+                                        </span>
+                                    {% elseif transaction.type == 'payment' %}
+                                        <span class="badge text-bg-primary">
+                                            Покупка
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if transaction.course is defined and transaction.course %}
+                                        <a href="{{ path('app_course_show', {'id': transaction.course.id}) }}" class="text-decoration-none text-primary">
+                                            {{ transaction.course.title }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-secondary">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="fw-semibold">
+                                    {% if transaction.type == 'deposit' %}
+                                        <span class="text-success">+{{ transaction.amount }} ₽</span>
+                                    {% else %}
+                                        <span class="text-dark">-{{ transaction.amount }} ₽</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if transaction.expires_at is defined and transaction.expires_at %}
+                                        {{ transaction.expires_at|date('d.m.Y H:i') }}
+                                    {% else %}
+                                        {% if transaction.type === 'payment' %}
+                                            <span class="text-secondary">Бессрочно</span>
+                                        {% else %}
+                                            <span class="text-secondary">-</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <h4 class="h4 fw-semibold">
+                        Транзакций пока нет
+                    </h4>
+
+                    <p class="text-secondary mb-0">
+                        Здесь появится история пополнений и покупок курсов.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

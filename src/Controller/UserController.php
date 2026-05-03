@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Exception\BillingUnavailableException;
+use App\Repository\CourseRepository;
 use App\Security\User;
 use App\Service\BillingClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,6 +17,7 @@ final class UserController extends AbstractController
 {
     public function __construct(
         private readonly BillingClient $billingClient,
+        private readonly CourseRepository $courseRepository,
     ) {
     }
     #[Route('/profile', name: 'profile', methods: ['GET'])]
@@ -39,6 +41,44 @@ final class UserController extends AbstractController
         return $this->render('user/profile.html.twig', [
             'balance' => $data['balance'] ?? null,
             'error' => $error ?? null,
+        ]);
+    }
+
+    #[Route('/transactions', name: 'transactions', methods: ['GET'])]
+    public function transactions(): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        try {
+            $transactions = $this->billingClient->getTransactions($user->getApiToken());
+
+            if (($transactions['_status_code'] ?? 500) !== 200) {
+                $this->addFlash(
+                    'danger',
+                    $transactions['message'] ?? 'Не удалось получить данные о балансе.'
+                );
+                return $this->redirectToRoute('app_user_profile');
+            }
+
+            unset($transactions['_status_code']);
+        } catch (BillingUnavailableException $e) {
+            $this->addFlash('danger', $e->getMessage());
+            return $this->redirectToRoute('app_user_profile');
+        }
+
+        foreach ($transactions as $key => $transaction) {
+            if (isset($transaction['course_code'])) {
+                $transactions[$key]['course'] = $this->courseRepository->findOneBy([
+                    'code' => $transaction['course_code']
+                ]);
+            }
+        }
+
+        return $this->render('user/transactions.html.twig', [
+            'transactions' => $transactions,
         ]);
     }
 }

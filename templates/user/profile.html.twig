@@ -17,8 +17,8 @@
     <div class="w-100 m-0 p-0">
         <div class="card rounded-4">
             <div class="card-body p-4 p-md-5">
-                <h1 class="h3">Профиль</h1>
-                <p class="text-secondary">Здесь представлена информация о вашем аккаунте</p>
+                <h1 class="h3 mb-1">Профиль</h1>
+                <p class="text-secondary mb-0">Здесь представлена информация о вашем аккаунте</p>
 
                 <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
                     <span class="text-secondary">Email</span>
@@ -38,13 +38,20 @@
 
                 <div class="d-flex justify-content-between align-items-center py-3">
                     <span class="text-secondary">Баланс</span>
-                    <span class="fw-bold fs-5 text-primary">
-                        {% if balance is not null %}
-                            {{ balance }} ₽
-                        {% else %}
-                            <span class="text-danger">-</span>
-                        {% endif %}
-                    </span>
+
+                    <div class="text-end">
+                        <div class="fw-bold fs-5 text-primary">
+                            {% if balance is not null %}
+                                {{ balance }} ₽
+                            {% else %}
+                                <span class="text-danger">-</span>
+                            {% endif %}
+                        </div>
+
+                        <a href="{{ path('app_user_transactions') }}" class="small text-decoration-none">
+                            История транзакций
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
