@@ -62,7 +62,10 @@ final class LessonController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function show(Lesson $lesson): Response
     {
-        if (!$this->paymentInfoProvider->isCourseAvailable($lesson->getCourse(), $this->getUser())) {
+        if (
+            !$this->isGranted('ROLE_SUPER_ADMIN') &&
+            !$this->paymentInfoProvider->isCourseAvailable($lesson->getCourse(), $this->getUser())
+        ) {
             throw new AccessDeniedException('Оплатите курс для полного доступа к урокам.');
         }
 
