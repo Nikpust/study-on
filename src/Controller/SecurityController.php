@@ -74,6 +74,7 @@ class SecurityController extends AbstractController
                     $user->setEmail($dto->email);
                     $user->setRoles($response['roles'] ?? []);
                     $user->setApiToken($response['token'] ?? null);
+                    $user->setRefreshToken($response['refresh_token'] ?? null);
 
                     return $authenticator->authenticateUser(
                         $user,
