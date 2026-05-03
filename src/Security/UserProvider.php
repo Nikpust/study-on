@@ -89,6 +89,12 @@ class UserProvider implements UserProviderInterface
         try {
             $data = $this->billingClient->getTokenByRefreshToken($user->getRefreshToken());
             if (($data['_status_code'] ?? 500) !== 200) {
+                $request = $this->requestStack->getCurrentRequest();
+                $request?->getSession()?->getFlashBag()->add(
+                    'warning',
+                    'Сессия истекла, выполните повторный вход.'
+                );
+
                 throw new CustomUserMessageAuthenticationException('Сессия истекла, выполните повторный вход');
             }
 
