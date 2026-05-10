@@ -7,10 +7,12 @@ use App\Exception\BillingUnavailableException;
 use App\Form\CourseType;
 use App\Repository\CourseRepository;
 use App\Security\User;
+use App\Service\BillingCourseFormHandler;
 use App\Service\CoursePaymentInfoProvider;
 use App\Service\BillingClient;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -22,6 +24,7 @@ final class CourseController extends AbstractController
     public function __construct(
         private readonly CoursePaymentInfoProvider $paymentInfoProvider,
         private readonly BillingClient $billingClient,
+        private readonly BillingCourseFormHandler $billingCourseFormHandler,
     ) {
     }
 
@@ -53,7 +56,28 @@ final class CourseController extends AbstractController
         $form = $this->createForm(CourseType::class, $course);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted()) {
+            $this->billingCourseFormHandler->validateBillingCourseData($form);
+
+            if (!$form->isValid()) {
+                return $this->renderFormWithErrors('course/new.html.twig', $course, $form);
+            }
+
+            try {
+                $response = $this->billingClient->createCourse(
+                    $this->getUser()->getApiToken(),
+                    $this->billingCourseFormHandler->getCourseData($form)
+                );
+            } catch (BillingUnavailableException $e) {
+                $this->addFlash('danger', $e->getMessage());
+                return $this->renderFormWithErrors('course/new.html.twig', $course, $form);
+            }
+
+            if (($response['_status_code'] ?? 500) !== Response::HTTP_CREATED) {
+                $this->billingCourseFormHandler->addBillingErrorsToForm($form, $response);
+                return $this->renderFormWithErrors('course/new.html.twig', $course, $form);
+            }
+
             $entityManager->persist($course);
             $entityManager->flush();
 
@@ -120,10 +144,46 @@ final class CourseController extends AbstractController
     #[IsGranted('ROLE_SUPER_ADMIN')]
     public function edit(Request $request, Course $course, EntityManagerInterface $entityManager): Response
     {
-        $form = $this->createForm(CourseType::class, $course);
+        $currentCode = $course->getCode();
+
+        try {
+            $courseInfo = $this->billingClient->getCourse($currentCode);
+        } catch (BillingUnavailableException $e) {
+            $this->addFlash('danger', $e->getMessage());
+            return $this->redirectToRoute('app_course_index', [], Response::HTTP_SEE_OTHER);
+        }
+
+        $options = [
+            'billing_type' => $courseInfo['type'] ?? 'free',
+            'billing_price' => $courseInfo['price'] ?? null,
+        ];
+
+        $form = $this->createForm(CourseType::class, $course, $options);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted()) {
+            $this->billingCourseFormHandler->validateBillingCourseData($form);
+
+            if (!$form->isValid()) {
+                return $this->renderFormWithErrors('course/edit.html.twig', $course, $form);
+            }
+
+            try {
+                $response = $this->billingClient->editCourse(
+                    $this->getUser()->getApiToken(),
+                    $currentCode,
+                    $this->billingCourseFormHandler->getCourseData($form)
+                );
+            } catch (BillingUnavailableException $e) {
+                $this->addFlash('danger', $e->getMessage());
+                return $this->renderFormWithErrors('course/edit.html.twig', $course, $form);
+            }
+
+            if (($response['_status_code'] ?? 500) !== Response::HTTP_OK) {
+                $this->billingCourseFormHandler->addBillingErrorsToForm($form, $response);
+                return $this->renderFormWithErrors('course/edit.html.twig', $course, $form);
+            }
+
             $entityManager->flush();
 
             return $this->redirectToRoute('app_course_show', [
@@ -147,5 +207,13 @@ final class CourseController extends AbstractController
         }
 
         return $this->redirectToRoute('app_course_index', [], Response::HTTP_SEE_OTHER);
+    }
+
+    private function renderFormWithErrors(string $template, Course $course, FormInterface $form): Response
+    {
+        return $this->render($template, [
+            'course' => $course,
+            'form' => $form,
+        ], new Response(status: Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

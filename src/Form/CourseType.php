@@ -4,7 +4,9 @@ namespace App\Form;
 
 use App\Entity\Course;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -17,6 +19,23 @@ class CourseType extends AbstractType
             ->add('code', TextType::class, [
                 'label' => 'Код',
                 'empty_data' => '',
+            ])
+            ->add('type', ChoiceType::class, [
+                'label' => 'Тип курса',
+                'mapped' => false,
+                'data' => $options['billing_type'],
+                'choices' => [
+                    'Аренда' => 'rent',
+                    'Покупка' => 'buy',
+                    'Бесплатный' => 'free',
+                ],
+                'invalid_message' => 'Тип курса должен быть одним из: free, rent, buy.',
+            ])
+            ->add('price', NumberType::class, [
+                'label' => 'Цена',
+                'mapped' => false,
+                'data' => $options['billing_price'],
+                'required' => false,
             ])
             ->add('title', TextType::class, [
                 'label' => 'Название',
@@ -34,6 +53,8 @@ class CourseType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Course::class,
+            'billing_type' => 'free',
+            'billing_price' => null,
         ]);
     }
 }
