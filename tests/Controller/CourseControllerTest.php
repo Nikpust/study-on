@@ -238,6 +238,8 @@ class CourseControllerTest extends WebTestCase
 
         $client->submitForm('Создать', [
             'course[code]' => 'new-course',
+            'course[type]' => 'buy',
+            'course[price]' => 399.9,
             'course[title]' => 'Новый тестовый курс',
             'course[description]' => 'Содержимое курса',
         ]);
@@ -281,6 +283,8 @@ class CourseControllerTest extends WebTestCase
 
         $client->submitForm('Сохранить', [
             'course[code]' => 'new-course',
+            'course[type]' => 'buy',
+            'course[price]' => 399.9,
             'course[title]' => 'Новый тестовый курс',
             'course[description]' => 'Содержимое курса',
         ]);
@@ -377,12 +381,40 @@ class CourseControllerTest extends WebTestCase
         self::assertSelectorNotExists('a:contains("Добавить урок")');
     }
 
+    public function testNewCoursePageContainsBillingFieldsForAdmin(): void
+    {
+        $client = static::createClient();
+        $this->loginAsAdmin($client);
+
+        $client->request('GET', '/courses/new');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('select[name="course[type]"]');
+        self::assertSelectorExists('input[name="course[price]"]');
+    }
+
+    public function testEditCoursePageContainsBillingFieldsForAdmin(): void
+    {
+        $client = static::createClient();
+        $this->loginAsAdmin($client);
+
+        $courseId = $this->getCourseIdByCode('php-backend-development');
+
+        $client->request('GET', '/courses/' . $courseId . '/edit');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('select[name="course[type]"]');
+        self::assertSelectorExists('input[name="course[price]"]');
+    }
+
     public static function invalidCourseDataProvider(): array
     {
         return [
             'code unique' => [
               [
                   'course[code]' => 'php-backend-development',
+                  'course[type]' => 'buy',
+                  'course[price]' => 100,
                   'course[title]' => 'Нормальный курс',
                   'course[description]' => 'Описание курса',
               ],
@@ -391,6 +423,8 @@ class CourseControllerTest extends WebTestCase
             'code blank' => [
                 [
                     'course[code]' => '',
+                    'course[type]' => 'buy',
+                    'course[price]' => 100,
                     'course[title]' => 'Нормальный курс',
                     'course[description]' => 'Описание курса',
                 ],
@@ -399,6 +433,8 @@ class CourseControllerTest extends WebTestCase
             'code short' => [
                 [
                     'course[code]' => 'ab',
+                    'course[type]' => 'buy',
+                    'course[price]' => 100,
                     'course[title]' => 'Нормальный курс',
                     'course[description]' => 'Описание курса',
                 ],
@@ -407,6 +443,8 @@ class CourseControllerTest extends WebTestCase
             'code long' => [
                 [
                     'course[code]' => str_repeat('a', 256),
+                    'course[type]' => 'buy',
+                    'course[price]' => 100,
                     'course[title]' => 'Нормальный курс',
                     'course[description]' => 'Описание курса',
                 ],
@@ -415,6 +453,8 @@ class CourseControllerTest extends WebTestCase
             'title blank' => [
                 [
                     'course[code]' => 'valid-code',
+                    'course[type]' => 'buy',
+                    'course[price]' => 100,
                     'course[title]' => '',
                     'course[description]' => 'Описание курса',
                 ],
@@ -423,6 +463,8 @@ class CourseControllerTest extends WebTestCase
             'title short' => [
                 [
                     'course[code]' => 'valid-code',
+                    'course[type]' => 'buy',
+                    'course[price]' => 100,
                     'course[title]' => 'ab',
                     'course[description]' => 'Описание курса',
                 ],
@@ -431,6 +473,8 @@ class CourseControllerTest extends WebTestCase
             'title long' => [
                 [
                     'course[code]' => 'valid-code',
+                    'course[type]' => 'buy',
+                    'course[price]' => 100,
                     'course[title]' => str_repeat('a', 256),
                     'course[description]' => 'Описание курса',
                 ],
@@ -439,10 +483,52 @@ class CourseControllerTest extends WebTestCase
             'description long' => [
                 [
                     'course[code]' => 'valid-code',
+                    'course[type]' => 'buy',
+                    'course[price]' => 100,
                     'course[title]' => 'Нормальный курс',
                     'course[description]' => str_repeat('a', 1001),
                 ],
                 'Описание курса не должно превышать 1000 символов',
+            ],
+            'paid course without price' => [
+                [
+                    'course[code]' => 'valid-code',
+                    'course[type]' => 'buy',
+                    'course[price]' => '',
+                    'course[title]' => 'Нормальный курс',
+                    'course[description]' => 'Описание курса',
+                ],
+                'Платный курс должен иметь положительную цену.',
+            ],
+            'free course with price' => [
+                [
+                    'course[code]' => 'valid-code',
+                    'course[type]' => 'free',
+                    'course[price]' => 100,
+                    'course[title]' => 'Нормальный курс',
+                    'course[description]' => 'Описание курса',
+                ],
+                'Бесплатный курс не должен иметь цену.',
+            ],
+            'paid course with zero price' => [
+                [
+                    'course[code]' => 'valid-code',
+                    'course[type]' => 'buy',
+                    'course[price]' => 0,
+                    'course[title]' => 'Нормальный курс',
+                    'course[description]' => 'Описание курса',
+                ],
+                'Платный курс должен иметь положительную цену.',
+            ],
+            'paid course with negative price' => [
+                [
+                    'course[code]' => 'valid-code',
+                    'course[type]' => 'rent',
+                    'course[price]' => -100,
+                    'course[title]' => 'Нормальный курс',
+                    'course[description]' => 'Описание курса',
+                ],
+                'Платный курс должен иметь положительную цену.',
             ],
         ];
     }

@@ -10,40 +10,48 @@ final readonly class BillingClientMock extends BillingClient
     private const COURSES = [
         'web-development-basics' => [
             'code' => 'web-development-basics',
+            'title' => 'Основы веб-разработки',
             'type' => 'free',
         ],
         'php-backend-development' => [
             'code' => 'php-backend-development',
+            'title' => 'Backend-разработка на PHP',
             'type' => 'buy',
             'price' => '459.0',
         ],
         'database-design-postgresql' => [
             'code' => 'database-design-postgresql',
+            'title' => 'Проектирование баз данных в PostgreSQL',
             'type' => 'rent',
             'price' => '99.5',
         ],
         'symfony-basics' => [
             'code' => 'symfony-basics',
+            'title' => 'Основы Symfony',
             'type' => 'buy',
             'price' => '249.0',
         ],
         'rest-api-development' => [
             'code' => 'rest-api-development',
+            'title' => 'Разработка REST API',
             'type' => 'rent',
             'price' => '59.5',
         ],
         'docker-for-developers' => [
             'code' => 'docker-for-developers',
+            'title' => 'Docker для разработчиков',
             'type' => 'buy',
             'price' => '200.0',
         ],
         'automated-testing-php' => [
             'code' => 'automated-testing-php',
+            'title' => 'Автоматизированное тестирование на PHP',
             'type' => 'rent',
             'price' => '65.5',
         ],
         'frontend-with-bootstrap' => [
             'code' => 'frontend-with-bootstrap',
+            'title' => 'Frontend-разработка с Bootstrap',
             'type' => 'free',
         ],
     ];
@@ -287,6 +295,80 @@ final readonly class BillingClientMock extends BillingClient
                 '_status_code' => 404,
             ],
         };
+    }
+
+    public function createCourse(string $apiToken, array $courseData): array
+    {
+        if ($apiToken !== 'admin-jwt-token') {
+            return [
+                'message' => 'Доступ запрещён.',
+                '_status_code' => 403,
+            ];
+        }
+
+        return $this->validateCourseData($courseData, 201);
+    }
+
+    public function editCourse(string $apiToken, string $currentCode, array $courseData): array
+    {
+        if ($apiToken !== 'admin-jwt-token') {
+            return [
+                'message' => 'Доступ запрещён.',
+                '_status_code' => 403,
+            ];
+        }
+
+        if (!isset(self::COURSES[$currentCode])) {
+            return [
+                'message' => 'Курс не найден.',
+                '_status_code' => 404,
+            ];
+        }
+
+        return $this->validateCourseData($courseData, 200);
+    }
+
+    private function validateCourseData(array $courseData, int $successStatusCode): array
+    {
+        $type = $courseData['type'] ?? null;
+        $price = $courseData['price'] ?? null;
+
+        if (in_array($type, ['rent', 'buy'], true) && ($price === null || $price <= 0)) {
+            return [
+                'type' => 'https://symfony.com/errors/validation',
+                'title' => 'Validation Failed',
+                'status' => 422,
+                'detail' => 'price: Платный курс должен иметь положительную цену.',
+                'violations' => [
+                    [
+                        'propertyPath' => 'price',
+                        'title' => 'Платный курс должен иметь положительную цену.',
+                    ],
+                ],
+                '_status_code' => 422,
+            ];
+        }
+
+        if ($type === 'free' && $price !== null) {
+            return [
+                'type' => 'https://symfony.com/errors/validation',
+                'title' => 'Validation Failed',
+                'status' => 422,
+                'detail' => 'price: Бесплатный курс не должен иметь цену.',
+                'violations' => [
+                    [
+                        'propertyPath' => 'price',
+                        'title' => 'Бесплатный курс не должен иметь цену.',
+                    ],
+                ],
+                '_status_code' => 422,
+            ];
+        }
+
+        return [
+            'success' => true,
+            '_status_code' => $successStatusCode,
+        ];
     }
 
     private function applyTransactionFilters(array $transactions, array $filters): array
