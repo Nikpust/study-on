@@ -54,6 +54,7 @@ services:
       - .:/app
       - yarn_cache:/yarn
       - node_modules:/app/node_modules
+      - VENDOR:/app/vendor
 
 networks:
   default:
