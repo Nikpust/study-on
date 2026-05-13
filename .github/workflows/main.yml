@@ -19,8 +19,8 @@ jobs:
             - name: Prepare environment
               run: |
                   echo "NGINX_PORT=81" >> .env
-                  echo "DATABASE_URL=pgsql://pguser:pguser@postgres:5432/study_on" >> .env.local
-                  echo "DATABASE_URL=pgsql://pguser:pguser@postgres:5432/study_on" >> .env.test.local
+                  echo "DATABASE_URL=postgresql://pguser:pguser@postgres:5432/study_on?serverVersion=18.0.0&charset=utf8" > .env.local
+                  echo "DATABASE_URL=postgresql://pguser:pguser@postgres:5432/study_on?serverVersion=18.0.0&charset=utf8" > .env.test.local
 
             - name: Build Docker
               run: |
@@ -31,6 +31,7 @@ jobs:
 
             - name: Install backend dependencies
               run: |
+                  docker compose exec -T php git config --global --add safe.directory /app
                   docker compose exec -T php composer install --no-interaction --prefer-dist
 
             - name: Install frontend dependencies
