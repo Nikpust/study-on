@@ -1,0 +1,50 @@
+name: CI
+
+on:
+    push:
+        branches: [ "main" ]
+    workflow_dispatch:
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Docker Compose
+              uses: docker/setup-compose-action@v2
+
+            - name: Prepare environment
+              run: |
+                  echo "NGINX_PORT=81" >> .env
+                  echo "DATABASE_URL=pgsql://pguser:pguser@postgres:5432/study_on" >> .env.local
+                  echo "DATABASE_URL=pgsql://pguser:pguser@postgres:5432/study_on" >> .env.test.local
+
+            - name: Build Docker
+              run: |
+                  mkdir -p ~/.yarn
+                  docker network create study-onbilling_default || true
+                  docker compose up -d --build
+                  docker ps -a
+
+            - name: Install backend dependencies
+              run: |
+                  docker compose exec -T php composer install --no-interaction --prefer-dist
+
+            - name: Install frontend dependencies
+              run: |
+                  docker compose run --rm -u root node yarn install
+                  docker compose run --rm -u root node yarn encore dev
+
+            - name: Prepare test database
+              run: |
+                  docker compose exec -T php bin/console doctrine:database:drop --force --env=test || true
+                  docker compose exec -T php bin/console doctrine:database:create --env=test
+                  docker compose exec -T php bin/console doctrine:migrations:migrate -n --env=test
+                  docker compose exec -T php bin/console doctrine:fixtures:load -n --env=test
+
+            - name: Run PHPUnit
+              run: |
+                  docker compose exec -T php bin/phpunit
